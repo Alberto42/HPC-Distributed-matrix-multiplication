@@ -7,6 +7,7 @@
 #include <mpi.h>
 #include <fstream>
 #include <sys/stat.h>
+#include <algorithm>
 
 namespace po = boost::program_options;
 using namespace std;
@@ -19,6 +20,38 @@ struct ProgramSpec {
     ProgramSpec() : g(-1), verbose(false), i(false), m(false) {}
 
 };
+
+template<class T>
+void printArray(T* array,int size, ostream& stream = cout) {
+    for(int i=0;i<size;i++) {
+        stream<< array[i] << " ";
+    }
+    stream << endl;
+}
+
+class Logger {
+public:
+    ofstream outfile;
+
+    Logger(int myProcessNo) {
+        mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        string name = "logger/" + to_string(myProcessNo);
+        outfile = ofstream(name);
+    }
+
+    Logger() {}
+
+    virtual ~Logger() {
+        outfile.close();
+
+    }
+
+    void log(const string &s) {
+        outfile << s << endl;
+    }
+};
+
+Logger *logger;
 
 class CSCMatrix {
 public:
@@ -66,13 +99,13 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
     matrix.indices = new int[matrix.count];
 
     for (int i = 0; i < matrix.count; i++) {
-        cin >> csrNonzeros[i];
+        stream >> csrNonzeros[i];
     }
     for (int i = 0; i < matrix.n + 1; i++) {
-        cin >> csrExtends[i];
+        stream >> csrExtends[i];
     }
     for (int i = 0; i < matrix.count; i++) {
-        cin >> csrIndices[i];
+        stream >> csrIndices[i];
     }
     vector<tuple<int, int, double> > tmp;
     for (int i = 1; i < matrix.n + 1; i++) {
@@ -84,15 +117,16 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
             tmp.emplace_back(make_tuple(colIdx, rowIdx, nonzero));
         }
     }
+    sort(tmp.begin(), tmp.end());
     assert((int) tmp.size() == matrix.count);
     for (unsigned i = 0; i < tmp.size(); i++) {
         matrix.nonzeros[i] = get<2>(tmp[i]);
-        matrix.indices[i] = get<0>(tmp[i]);
+        matrix.indices[i] = get<1>(tmp[i]);
     }
     int a = 0;
     matrix.extents[0] = 0;
     for (int colIdx = 0; colIdx < matrix.m; colIdx++) {
-        while (get<1>(tmp[a]) == colIdx)
+        while (get<0>(tmp[a]) == colIdx)
             a++;
         matrix.extents[colIdx + 1] = a;
     }
@@ -103,7 +137,6 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
 
     return matrix;
 }
-
 void parseArgs(int argc, char **argv, ProgramSpec &s) {
     po::options_description desc{"Options"};
     try {
@@ -156,36 +189,13 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         cout << helpMsg << endl;
     }
 }
-
-class Logger {
-public:
-    ofstream outfile;
-
-    Logger(int myProcessNo) {
-        mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        string name = "logger/" + to_string(myProcessNo);
-        outfile = ofstream(name);
-    }
-
-    Logger() {}
-
-    virtual ~Logger() {
-        outfile.close();
-
-    }
-
-    void log(const string &s) {
-        outfile << s << endl;
-    }
-};
-
-Logger *logger;
 int myProcessNo;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
 const int INITIAL_SCATTER_TAG1 = 1;
 const int INITIAL_SCATTER_TAG2 = 2;
 const int INITIAL_SCATTER_TAG3 = 3;
+
 const int INITIAL_SCATTER_TAG4 = 4;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
@@ -238,13 +248,11 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     }
 
 }
-
 void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAColumn;
 
     ProgramSpec s;
-
     parseArgs(argc, argv, s);
 
     MPI_Init(&argc, &argv);
@@ -257,6 +265,7 @@ void sparseTimesDense(int argc, char *argv[]) {
     processesPerGroup = numProcesses / groupsCount;
 
     logger = new Logger(myProcessNo);
+
     if (myProcessNo == 0) {
         ifstream ifs = ifstream(s.file);
 
