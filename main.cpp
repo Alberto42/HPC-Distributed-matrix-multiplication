@@ -16,6 +16,61 @@ struct ProgramSpec {
     ProgramSpec() : g(-1), verbose(false), i(false), m(false) {}
 
 };
+class CSCMatrix {
+public:
+    double *nonzeros;
+    int *extents, *indices;
+    int n,m, count,maxNonzeroInRow;
+};
+CSCMatrix operator>>(istream& stream, CSCMatrix& matrix) {
+    stream >> matrix.n >> matrix.m >> matrix.count >> matrix.maxNonzeroInRow;
+    double *csrNonzeros;
+    int *csrExtends, *csrIndices;
+    csrNonzeros = new double[matrix.count];
+    csrExtends = new int[matrix.n+1];
+    csrIndices = new int[matrix.count];
+    matrix.nonzeros = new double[matrix.count];
+    matrix.extents = new int[matrix.m+1];
+    matrix.indices = new int[matrix.count];
+
+    for(int i=0;i<matrix.count;i++) {
+        cin >> csrNonzeros[i];
+    }
+    for(int i=0;i<matrix.n+1;i++) {
+        cin >> csrExtends[i];
+    }
+    for(int i=0;i<matrix.count;i++) {
+        cin >> csrIndices[i];
+    }
+    vector< tuple<int,int,double> > tmp;
+    for(int i=1;i<matrix.n+1;i++) {
+        int l=csrExtends[i-1],r=csrExtends[i];
+        int rowIdx = i-1;
+        for (int j = l;j < r;j++) {
+            int colIdx = csrIndices[j];
+            double nonzero = csrNonzeros[j];
+            tmp.emplace_back(make_tuple(colIdx, rowIdx, nonzero));
+        }
+    }
+    assert((int)tmp.size() == matrix.count);
+    for(unsigned i=0;i<tmp.size();i++) {
+        matrix.nonzeros[i] = get<2>(tmp[i]);
+        matrix.indices[i] = get<0>(tmp[i]);
+    }
+    int a=0;
+    matrix.extents[0] = 0;
+    for(int colIdx=0;colIdx < matrix.m;colIdx++) {
+        while(get<1>(tmp[a]) == colIdx)
+            a++;
+        matrix.extents[colIdx+1] = a;
+    }
+
+    delete [] csrNonzeros;
+    delete [] csrExtends;
+    delete [] csrIndices;
+
+    return matrix;
+}
 void parseArgs(int argc, const char **argv, ProgramSpec &s) {
     po::options_description desc{"Options"};
     try {
