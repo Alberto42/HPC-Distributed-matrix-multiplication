@@ -1,0 +1,3 @@
+cd ac370756; rm -rf build; mkdir build; cd build; cmake ..; make
+
+srun ./matrixmul -f sparse_matrix_file -s seed_for_dense_matrix -c repl_group_size -e exponent [-g ge_value] [-v] [-i] [-m]

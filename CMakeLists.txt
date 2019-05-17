@@ -1,6 +1,12 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10.2)
 project(ac370756)
-
 set(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_CXX_COMPILER mpic++)
 
-add_executable(ac370756 main.cpp)
+SET(CMAKE_CXX_FLAGS -lboost_program_options)
+
+include_directories(.)
+
+add_executable(matrixmul main.cpp)
+target_link_libraries(matrixmul ${MPI_C_LIBRARIES})
+target_link_libraries(matrixmul libboost_program_options.a)
