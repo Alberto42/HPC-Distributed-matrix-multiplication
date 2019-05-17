@@ -49,6 +49,9 @@ public:
     void log(T &s) {
         outfile << s << endl;
     }
+    ofstream& stream() {
+        return outfile;
+    }
 };
 
 Logger *logger;
@@ -211,7 +214,8 @@ const int INITIAL_SCATTER_TAG4 = 4;
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     vector<CSCMatrix> pencils;
     if (myProcessNo == 0) {
-        pencils = fullMatrixA.split(groupsCount);
+        pencils = fullMatrixA.split(processesPerGroup);
+        localAColumn = pencils[0];
         for (int i = 1; i < processesPerGroup; i++) {
             MPI_Send(
                     (const void *) &pencils[i],
@@ -222,7 +226,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void *) &pencils[i].nonzeros,
+                    (const void *) pencils[i].nonzeros,
                     pencils[i].count,
                     MPI_DOUBLE,
                     i,
@@ -230,7 +234,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void *) &pencils[i].extents,
+                    (const void *) pencils[i].extents,
                     pencils[i].m + 1,
                     MPI_INT,
                     i,
@@ -238,7 +242,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void *) &pencils[i].indices,
+                    (const void *) pencils[i].indices,
                     pencils[i].count,
                     MPI_INT,
                     i,
