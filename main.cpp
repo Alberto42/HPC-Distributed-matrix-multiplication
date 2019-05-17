@@ -5,6 +5,8 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <string>
 #include <mpi.h>
+#include <fstream>
+#include <sys/stat.h>
 
 namespace po = boost::program_options;
 using namespace std;
@@ -21,7 +23,34 @@ class CSCMatrix {
 public:
     double *nonzeros;
     int *extents, *indices;
-    int n,m, count,maxNonzeroInRow;
+    int n,m, count,maxNonzeroInRow, offset;
+
+    CSCMatrix() {offset=0;}
+
+    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset)
+            : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
+              maxNonzeroInRow(maxNonzeroInRow), offset(offset) {}
+
+    vector<CSCMatrix> split(int pencilsCount) {
+        assert(m % pencilsCount == 0);
+        int columnsInPeace = m / pencilsCount;
+        vector<CSCMatrix> result;
+        for(int colRangeBegin=0;colRangeBegin< m;colRangeBegin+=columnsInPeace) {
+            int colRangeEnd = colRangeBegin + columnsInPeace;
+            int first = extents[colRangeBegin],second = extents[colRangeEnd];
+            CSCMatrix nextMatrix(
+                    nonzeros+first,
+                    extents+colRangeBegin,
+                    indices+first,
+                    n,
+                    columnsInPeace,
+                    second-first,
+                    -1,
+                    first);
+            result.push_back(nextMatrix);
+        }
+        return result;
+    }
 };
 CSCMatrix operator>>(istream& stream, CSCMatrix& matrix) {
     stream >> matrix.n >> matrix.m >> matrix.count >> matrix.maxNonzeroInRow;
@@ -123,20 +152,103 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         cout << helpMsg << endl;
     }
 }
+class Logger {
+public:
+    ofstream outfile;
+    Logger(int myProcessNo) {
+        mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        string name = "logger/" + to_string(myProcessNo);
+        outfile = ofstream(name);
+    }
+    Logger() {}
+
+    virtual ~Logger() {
+        outfile.close();
+
+    }
+    void log(const string &s) {
+        outfile << s << endl;
+    }
+};
+
+Logger *logger;
+int myProcessNo;
+int numProcesses;
+int groupId, groupsCount, processesPerGroup;
+const int INITIAL_SCATTER_TAG1=1;
+const int INITIAL_SCATTER_TAG2=1;
+const int INITIAL_SCATTER_TAG3=1;
+const int INITIAL_SCATTER_TAG4=1;
+
+void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
+    vector<CSCMatrix> pencils;
+    if (myProcessNo == 0) {
+        pencils = fullMatrixA.split(groupsCount);
+        for(int i=1;i<processesPerGroup;i++) {
+            MPI_Send(
+                    (const void*)&pencils[i],
+                    sizeof(CSCMatrix),
+                    MPI_BYTE,
+                    i,
+                    INITIAL_SCATTER_TAG1,
+                    MPI_COMM_WORLD
+            );
+            MPI_Send(
+                    (const void*)&pencils[i].nonzeros,
+                    pencils[i].count,
+                    MPI_DOUBLE,
+                    i,
+                    INITIAL_SCATTER_TAG2,
+                    MPI_COMM_WORLD
+            );
+            MPI_Send(
+                    (const void*)&pencils[i].extents,
+                    pencils[i].m+1,
+                    MPI_INT,
+                    i,
+                    INITIAL_SCATTER_TAG3,
+                    MPI_COMM_WORLD
+            );
+            MPI_Send(
+                    (const void*)&pencils[i].indices,
+                    pencils[i].count,
+                    MPI_INT,
+                    i,
+                    INITIAL_SCATTER_TAG4,
+                    MPI_COMM_WORLD
+            );
+        }
+    } else {
+        MPI_Status status;
+        MPI_Recv((void*)&localAColumn, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
+        MPI_Recv((void*)localAColumn.nonzeros, localAColumn.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2, MPI_COMM_WORLD, &status);
+        MPI_Recv((void*)localAColumn.extents, localAColumn.m+1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD, &status);
+        MPI_Recv((void*)localAColumn.indices, localAColumn.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD, &status);
+    }
+
+}
 void sparseTimesDense(int argc,char *argv[]) {
-    int myProcessNo;
-    int numProcesses;
-    int groupId;
+
+    CSCMatrix fullMatrixA, localAColumn;
     ProgramSpec s;
     parseArgs(argc, argv, s);
+
+    assert(numProcesses % s.c == 0);
+    groupsCount = s.c;
+    groupId = myProcessNo % numProcesses;
+    processesPerGroup = numProcesses / groupsCount;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
+
+    logger = new Logger(myProcessNo);
     if (myProcessNo == 0) {
-        // read sparse matrix
+        ifstream ifs = ifstream(s.file);
+
+        ifs >> fullMatrixA;
     }
-    // scatter sparse matrix among groups
+    scatterAAmongGroups(fullMatrixA, localAColumn);
     // generate appropriate B submatrices
     // synchronize
     // start timer
@@ -146,5 +258,5 @@ void sparseTimesDense(int argc,char *argv[]) {
     // print results
 }
 int main(int argc,char **argv) {
-    std::cout << "Hello, World!" << std::endl;
+    sparseTimesDense(argc, argv);
 }
