@@ -182,9 +182,9 @@ int myProcessNo;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
 const int INITIAL_SCATTER_TAG1 = 1;
-const int INITIAL_SCATTER_TAG2 = 1;
-const int INITIAL_SCATTER_TAG3 = 1;
-const int INITIAL_SCATTER_TAG4 = 1;
+const int INITIAL_SCATTER_TAG2 = 2;
+const int INITIAL_SCATTER_TAG3 = 3;
+const int INITIAL_SCATTER_TAG4 = 4;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     vector<CSCMatrix> pencils;
