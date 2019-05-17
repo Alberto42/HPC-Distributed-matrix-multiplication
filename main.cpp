@@ -13,19 +13,20 @@ using namespace std;
 
 struct ProgramSpec {
     string file;
-    int seed,c,exponent,g;
-    bool verbose,i,m;
+    int seed, c, exponent, g;
+    bool verbose, i, m;
 
     ProgramSpec() : g(-1), verbose(false), i(false), m(false) {}
 
 };
+
 class CSCMatrix {
 public:
     double *nonzeros;
     int *extents, *indices;
-    int n,m, count,maxNonzeroInRow, offset;
+    int n, m, count, maxNonzeroInRow, offset;
 
-    CSCMatrix() {offset=0;}
+    CSCMatrix() { offset = 0; }
 
     CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset)
             : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
@@ -35,16 +36,16 @@ public:
         assert(m % pencilsCount == 0);
         int columnsInPeace = m / pencilsCount;
         vector<CSCMatrix> result;
-        for(int colRangeBegin=0;colRangeBegin< m;colRangeBegin+=columnsInPeace) {
+        for (int colRangeBegin = 0; colRangeBegin < m; colRangeBegin += columnsInPeace) {
             int colRangeEnd = colRangeBegin + columnsInPeace;
-            int first = extents[colRangeBegin],second = extents[colRangeEnd];
+            int first = extents[colRangeBegin], second = extents[colRangeEnd];
             CSCMatrix nextMatrix(
-                    nonzeros+first,
-                    extents+colRangeBegin,
-                    indices+first,
+                    nonzeros + first,
+                    extents + colRangeBegin,
+                    indices + first,
                     n,
                     columnsInPeace,
-                    second-first,
+                    second - first,
                     -1,
                     first);
             result.push_back(nextMatrix);
@@ -52,55 +53,57 @@ public:
         return result;
     }
 };
-CSCMatrix operator>>(istream& stream, CSCMatrix& matrix) {
+
+CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
     stream >> matrix.n >> matrix.m >> matrix.count >> matrix.maxNonzeroInRow;
     double *csrNonzeros;
     int *csrExtends, *csrIndices;
     csrNonzeros = new double[matrix.count];
-    csrExtends = new int[matrix.n+1];
+    csrExtends = new int[matrix.n + 1];
     csrIndices = new int[matrix.count];
     matrix.nonzeros = new double[matrix.count];
-    matrix.extents = new int[matrix.m+1];
+    matrix.extents = new int[matrix.m + 1];
     matrix.indices = new int[matrix.count];
 
-    for(int i=0;i<matrix.count;i++) {
+    for (int i = 0; i < matrix.count; i++) {
         cin >> csrNonzeros[i];
     }
-    for(int i=0;i<matrix.n+1;i++) {
+    for (int i = 0; i < matrix.n + 1; i++) {
         cin >> csrExtends[i];
     }
-    for(int i=0;i<matrix.count;i++) {
+    for (int i = 0; i < matrix.count; i++) {
         cin >> csrIndices[i];
     }
-    vector< tuple<int,int,double> > tmp;
-    for(int i=1;i<matrix.n+1;i++) {
-        int l=csrExtends[i-1],r=csrExtends[i];
-        int rowIdx = i-1;
-        for (int j = l;j < r;j++) {
+    vector<tuple<int, int, double> > tmp;
+    for (int i = 1; i < matrix.n + 1; i++) {
+        int l = csrExtends[i - 1], r = csrExtends[i];
+        int rowIdx = i - 1;
+        for (int j = l; j < r; j++) {
             int colIdx = csrIndices[j];
             double nonzero = csrNonzeros[j];
             tmp.emplace_back(make_tuple(colIdx, rowIdx, nonzero));
         }
     }
-    assert((int)tmp.size() == matrix.count);
-    for(unsigned i=0;i<tmp.size();i++) {
+    assert((int) tmp.size() == matrix.count);
+    for (unsigned i = 0; i < tmp.size(); i++) {
         matrix.nonzeros[i] = get<2>(tmp[i]);
         matrix.indices[i] = get<0>(tmp[i]);
     }
-    int a=0;
+    int a = 0;
     matrix.extents[0] = 0;
-    for(int colIdx=0;colIdx < matrix.m;colIdx++) {
-        while(get<1>(tmp[a]) == colIdx)
+    for (int colIdx = 0; colIdx < matrix.m; colIdx++) {
+        while (get<1>(tmp[a]) == colIdx)
             a++;
-        matrix.extents[colIdx+1] = a;
+        matrix.extents[colIdx + 1] = a;
     }
 
-    delete [] csrNonzeros;
-    delete [] csrExtends;
-    delete [] csrIndices;
+    delete[] csrNonzeros;
+    delete[] csrExtends;
+    delete[] csrIndices;
 
     return matrix;
 }
+
 void parseArgs(int argc, char **argv, ProgramSpec &s) {
     po::options_description desc{"Options"};
     try {
@@ -113,14 +116,13 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
                 ("v", "verbose")
                 ("i", "i")
                 ("m", "m")
-                ("help", "help_message")
-                ;
+                ("help", "help_message");
 
         po::variables_map vm;
-        po::store (po::command_line_parser (argc, argv).options (desc)
-                                .style (po::command_line_style::default_style |
-                                        po::command_line_style::allow_long_disguise)
-                                .run (), vm);
+        po::store(po::command_line_parser(argc, argv).options(desc)
+                          .style(po::command_line_style::default_style |
+                                 po::command_line_style::allow_long_disguise)
+                          .run(), vm);
         po::notify(vm);
         if (vm.count("help")) {
             std::cout << desc << '\n';
@@ -147,25 +149,29 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
     catch (...) {
         std::stringstream stream;
         stream << desc;
-        string helpMsg = stream.str ();
-        boost::algorithm::replace_all (helpMsg, "--", "-");
+        string helpMsg = stream.str();
+        boost::algorithm::replace_all(helpMsg, "--", "-");
         cout << helpMsg << endl;
     }
 }
+
 class Logger {
 public:
     ofstream outfile;
+
     Logger(int myProcessNo) {
         mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         string name = "logger/" + to_string(myProcessNo);
         outfile = ofstream(name);
     }
+
     Logger() {}
 
     virtual ~Logger() {
         outfile.close();
 
     }
+
     void log(const string &s) {
         outfile << s << endl;
     }
@@ -175,18 +181,18 @@ Logger *logger;
 int myProcessNo;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
-const int INITIAL_SCATTER_TAG1=1;
-const int INITIAL_SCATTER_TAG2=1;
-const int INITIAL_SCATTER_TAG3=1;
-const int INITIAL_SCATTER_TAG4=1;
+const int INITIAL_SCATTER_TAG1 = 1;
+const int INITIAL_SCATTER_TAG2 = 1;
+const int INITIAL_SCATTER_TAG3 = 1;
+const int INITIAL_SCATTER_TAG4 = 1;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     vector<CSCMatrix> pencils;
     if (myProcessNo == 0) {
         pencils = fullMatrixA.split(groupsCount);
-        for(int i=1;i<processesPerGroup;i++) {
+        for (int i = 1; i < processesPerGroup; i++) {
             MPI_Send(
-                    (const void*)&pencils[i],
+                    (const void *) &pencils[i],
                     sizeof(CSCMatrix),
                     MPI_BYTE,
                     i,
@@ -194,7 +200,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void*)&pencils[i].nonzeros,
+                    (const void *) &pencils[i].nonzeros,
                     pencils[i].count,
                     MPI_DOUBLE,
                     i,
@@ -202,15 +208,15 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void*)&pencils[i].extents,
-                    pencils[i].m+1,
+                    (const void *) &pencils[i].extents,
+                    pencils[i].m + 1,
                     MPI_INT,
                     i,
                     INITIAL_SCATTER_TAG3,
                     MPI_COMM_WORLD
             );
             MPI_Send(
-                    (const void*)&pencils[i].indices,
+                    (const void *) &pencils[i].indices,
                     pencils[i].count,
                     MPI_INT,
                     i,
@@ -220,14 +226,18 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
         }
     } else {
         MPI_Status status;
-        MPI_Recv((void*)&localAColumn, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
-        MPI_Recv((void*)localAColumn.nonzeros, localAColumn.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2, MPI_COMM_WORLD, &status);
-        MPI_Recv((void*)localAColumn.extents, localAColumn.m+1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD, &status);
-        MPI_Recv((void*)localAColumn.indices, localAColumn.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD, &status);
+        MPI_Recv((void *) &localAColumn, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
+        MPI_Recv((void *) localAColumn.nonzeros, localAColumn.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2,
+                 MPI_COMM_WORLD, &status);
+        MPI_Recv((void *) localAColumn.extents, localAColumn.m + 1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD,
+                 &status);
+        MPI_Recv((void *) localAColumn.indices, localAColumn.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD,
+                 &status);
     }
 
 }
-void sparseTimesDense(int argc,char *argv[]) {
+
+void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAColumn;
     ProgramSpec s;
@@ -257,6 +267,7 @@ void sparseTimesDense(int argc,char *argv[]) {
     // gather results
     // print results
 }
-int main(int argc,char **argv) {
+
+int main(int argc, char **argv) {
     sparseTimesDense(argc, argv);
 }
