@@ -4,6 +4,7 @@
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <string>
+#include <mpi.h>
 
 namespace po = boost::program_options;
 using namespace std;
@@ -71,7 +72,7 @@ CSCMatrix operator>>(istream& stream, CSCMatrix& matrix) {
 
     return matrix;
 }
-void parseArgs(int argc, const char **argv, ProgramSpec &s) {
+void parseArgs(int argc, char **argv, ProgramSpec &s) {
     po::options_description desc{"Options"};
     try {
         desc.add_options()
@@ -122,8 +123,28 @@ void parseArgs(int argc, const char **argv, ProgramSpec &s) {
         cout << helpMsg << endl;
     }
 }
-int main(int argc,const char **argv) {
+void sparseTimesDense(int argc,char *argv[]) {
+    int myProcessNo;
+    int numProcesses;
+    int groupId;
     ProgramSpec s;
     parseArgs(argc, argv, s);
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
+    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
+    if (myProcessNo == 0) {
+        // read sparse matrix
+    }
+    // scatter sparse matrix among groups
+    // generate appropriate B submatrices
+    // synchronize
+    // start timer
+    // replicate matrices inside groups
+    // multiply, shift
+    // gather results
+    // print results
+}
+int main(int argc,char **argv) {
     std::cout << "Hello, World!" << std::endl;
 }
