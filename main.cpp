@@ -132,7 +132,9 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         s.seed = vm["s"].as<int>();
         s.c = vm["c"].as<int>();
         s.exponent = vm["e"].as<int>();
-        s.g = vm["g"].as<int>();
+        if (vm.find("g") != vm.end()) {
+            s.g = vm["g"].as<int>();
+        }
         if (vm.find("v") != vm.end()) {
             s.verbose = true;
         }
@@ -240,17 +242,19 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
 void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAColumn;
+
     ProgramSpec s;
+
     parseArgs(argc, argv, s);
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
+    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
 
     assert(numProcesses % s.c == 0);
     groupsCount = s.c;
     groupId = myProcessNo % numProcesses;
     processesPerGroup = numProcesses / groupsCount;
-
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
-    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
 
     logger = new Logger(myProcessNo);
     if (myProcessNo == 0) {

@@ -15,3 +15,10 @@ FIND_PACKAGE( Boost 1.40 COMPONENTS program_options REQUIRED )
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 TARGET_LINK_LIBRARIES( matrixmul LINK_PUBLIC ${Boost_LIBRARIES} )
+
+configure_file(run.sh . COPYONLY)
+
+add_custom_command(TARGET matrixmul
+        POST_BUILD
+        COMMAND /bin/sh /home/albert/HPC/MPI/ac370756/copy_tests.sh
+        )
