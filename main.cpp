@@ -2,6 +2,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <string>
 
 namespace po = boost::program_options;
@@ -27,10 +28,14 @@ void parseArgs(int argc, const char **argv, ProgramSpec &s) {
                 ("v", "verbose")
                 ("i", "i")
                 ("m", "m")
-                ("help", "help_message");
+                ("help", "help_message")
+                ;
 
         po::variables_map vm;
-        store(po::parse_command_line(argc, argv, desc), vm);
+        po::store (po::command_line_parser (argc, argv).options (desc)
+                                .style (po::command_line_style::default_style |
+                                        po::command_line_style::allow_long_disguise)
+                                .run (), vm);
         po::notify(vm);
         if (vm.count("help")) {
             std::cout << desc << '\n';
@@ -55,7 +60,11 @@ void parseArgs(int argc, const char **argv, ProgramSpec &s) {
         std::cerr << ex.what() << '\n';
     }
     catch (...) {
-        std::cerr << desc << '\n';
+        std::stringstream stream;
+        stream << desc;
+        string helpMsg = stream.str ();
+        boost::algorithm::replace_all (helpMsg, "--", "-");
+        cout << helpMsg << endl;
     }
 }
 int main(int argc,const char **argv) {

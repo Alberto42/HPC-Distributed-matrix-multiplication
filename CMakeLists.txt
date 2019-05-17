@@ -3,7 +3,7 @@ project(ac370756)
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_COMPILER mpic++)
 
-SET(CMAKE_CXX_FLAGS -lboost_program_options)
+SET(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
 
 include_directories(.)
 
