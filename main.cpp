@@ -45,8 +45,8 @@ public:
         outfile.close();
 
     }
-
-    void log(const string &s) {
+    template<class T>
+    void log(T &s) {
         outfile << s << endl;
     }
 };
@@ -84,6 +84,16 @@ public:
             result.push_back(nextMatrix);
         }
         return result;
+    }
+
+    friend ostream &operator<<(ostream &os, const CSCMatrix &matrix) {
+        os << "nonzeros: " << matrix.nonzeros << " extents: " << matrix.extents << " indices: " << matrix.indices
+           << " n: " << matrix.n << " m: " << matrix.m << " count: " << matrix.count << " maxNonzeroInRow: "
+           << matrix.maxNonzeroInRow << " offset: " << matrix.offset << endl;
+        printArray<double>(matrix.nonzeros, matrix.count, os);
+        printArray<int>(matrix.extents, matrix.m+1, os);
+        printArray<int>(matrix.indices, matrix.count, os);
+        return os;
     }
 };
 
@@ -239,6 +249,9 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     } else {
         MPI_Status status;
         MPI_Recv((void *) &localAColumn, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
+        localAColumn.nonzeros = new double[localAColumn.count];
+        localAColumn.extents = new int[localAColumn.m + 1];
+        localAColumn.indices = new int[localAColumn.count];
         MPI_Recv((void *) localAColumn.nonzeros, localAColumn.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2,
                  MPI_COMM_WORLD, &status);
         MPI_Recv((void *) localAColumn.extents, localAColumn.m + 1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD,
@@ -279,6 +292,8 @@ void sparseTimesDense(int argc, char *argv[]) {
     // multiply, shift
     // gather results
     // print results
+
+    MPI_Finalize();
 }
 
 int main(int argc, char **argv) {
