@@ -7,7 +7,7 @@ SET(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
 
 include_directories(.)
 
-add_executable(matrixmul main.cpp)
+add_executable(matrixmul main.cpp utils.h utils.cpp parseInput.h parseInput.cpp CSCMatrix.h CSCMatrix.cpp const.h)
 #target_link_libraries(matrixmul ${MPI_C_LIBRARIES})
 #target_link_libraries(matrixmul libboost_program_options.a libboost_log.a)
 
