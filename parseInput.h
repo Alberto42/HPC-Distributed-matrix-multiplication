@@ -17,7 +17,7 @@ struct ProgramSpec {
 
 extern ProgramSpec spec;
 
-void initSpec(int argc,char **argv);
+void initSpec(int argc, char **argv);
 
 
 #endif //AC370756_PARSEINPUT_H

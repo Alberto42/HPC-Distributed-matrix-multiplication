@@ -14,10 +14,13 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <algorithm>
+
 using namespace std;
+
 CSCMatrix::CSCMatrix() { offset = 0; }
 
-CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset, int shift)
+CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
+                     int offset, int shift)
         : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
           maxNonzeroInRow(maxNonzeroInRow), offset(offset), shift(shift) {}
 
@@ -48,7 +51,7 @@ ostream &operator<<(ostream &os, const CSCMatrix &matrix) {
        << " n: " << matrix.n << " m: " << matrix.m << " count: " << matrix.count << " maxNonzeroInRow: "
        << matrix.maxNonzeroInRow << " offset: " << matrix.offset << endl;
     printArray<double>(matrix.nonzeros, matrix.count, os);
-    printArray<int>(matrix.extents, matrix.m+1, os);
+    printArray<int>(matrix.extents, matrix.m + 1, os);
     printArray<int>(matrix.indices, matrix.count, os);
     return os;
 }

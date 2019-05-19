@@ -15,7 +15,6 @@
 #include "utils.h"
 
 
-
 Logger::Logger(int myProcessNo) {
     mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     string name = "logger/" + to_string(myProcessNo);
@@ -30,7 +29,7 @@ Logger::~Logger() {
 }
 
 
-ofstream& Logger::stream() {
+ofstream &Logger::stream() {
     return outfile;
 }
 

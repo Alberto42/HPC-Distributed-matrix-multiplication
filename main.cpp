@@ -62,7 +62,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
                     MPI_COMM_WORLD
             );
         }
-    } else if (myProcessRank < processesPerGroup){
+    } else if (myProcessRank < processesPerGroup) {
         MPI_Status status;
         MPI_Recv((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
         localAPencil.nonzeros = new double[localAPencil.count];
@@ -78,13 +78,15 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
     n = localAPencil.n;
 
 }
-void init(int argc,char **argv) {
+
+void init(int argc, char **argv) {
     initSpec(argc, argv);
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myProcessRank);
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     initLogger(myProcessRank);
 }
+
 void calcGroups() {
     assert(numProcesses % spec.c == 0);
     groupsCount = spec.c;
@@ -93,26 +95,30 @@ void calcGroups() {
 }
 
 void replicateAPencils(CSCMatrix &localAPencil) {
-    MPI_Bcast((void *)&localAPencil, sizeof(CSCMatrix),MPI_BYTE,0,myGroup);
-    MPI_Bcast((void *)localAPencil.nonzeros, localAPencil.count,MPI_DOUBLE,0,myGroup);
-    MPI_Bcast((void *)localAPencil.extents, localAPencil.m+1,MPI_INT,0,myGroup);
-    MPI_Bcast((void *)localAPencil.indices, localAPencil.count, MPI_INT,0,myGroup);
+    MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
+    MPI_Bcast((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, myGroup);
+    MPI_Bcast((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, myGroup);
+    MPI_Bcast((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, myGroup);
 }
+
 void createMPICommunicators() {
-    MPI_Comm_split(MPI_COMM_WORLD,myProcessRank % processesPerGroup,myProcessRank,&myGroup);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % processesPerGroup, myProcessRank, &myGroup);
 }
+
 void sparseTimesDense(const CSCMatrix &A, const DenseMatrix &B, DenseMatrix &result) {
-    for(int i=1;i < A.m+1;i++) {
-        int extentBegin = A.extents[i-1]-A.offset;
-        int extentEnd = A.extents[i]-A.offset;
-        int colA = i-1 + A.shift;
-        for(int j=extentBegin;j < extentEnd; j++) {
+    for (int i = 1; i < A.m + 1; i++) {
+        int extentBegin = A.extents[i - 1] - A.offset;
+        int extentEnd = A.extents[i] - A.offset;
+        int colA = i - 1 + A.shift;
+
+        for (int j = extentBegin; j < extentEnd; j++) {
             int rowA = A.indices[j];
             double valueA = A.nonzeros[j];
             int rowB = colA;
             int colBBegin = B.shift;
             int colBEnd = B.shift + B.m;
-            for(int colB = colBBegin;colB < colBEnd;colB++) {
+
+            for (int colB = colBBegin; colB < colBEnd; colB++) {
                 double valueB = B.matrix[rowB][colB];
                 result.add(rowA, colB, valueA * valueB);
             }
@@ -120,6 +126,7 @@ void sparseTimesDense(const CSCMatrix &A, const DenseMatrix &B, DenseMatrix &res
         }
     }
 }
+
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, localAPencil;

@@ -4,6 +4,7 @@
 
 #ifndef AC370756_CSCMATRIX_H
 #define AC370756_CSCMATRIX_H
+
 #include <vector>
 #include <fstream>
 #include <assert.h>
@@ -18,7 +19,8 @@ public:
 
     CSCMatrix();
 
-    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset, int shift);
+    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
+              int shift);
 
     vector<CSCMatrix> split(int pencilsCount);
 
@@ -26,7 +28,6 @@ public:
 };
 
 CSCMatrix operator>>(istream &stream, CSCMatrix &matrix);
-
 
 
 #endif //AC370756_CSCMATRIX_H

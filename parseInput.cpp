@@ -33,9 +33,9 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
 
         boost::program_options::variables_map vm;
         boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(desc)
-                          .style(boost::program_options::command_line_style::default_style |
-                                 boost::program_options::command_line_style::allow_long_disguise)
-                          .run(), vm);
+                                              .style(boost::program_options::command_line_style::default_style |
+                                                     boost::program_options::command_line_style::allow_long_disguise)
+                                              .run(), vm);
         boost::program_options::notify(vm);
         if (vm.count("help")) {
             std::cout << desc << '\n';
@@ -69,8 +69,9 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         std::cout << helpMsg << std::endl;
     }
 }
+
 ProgramSpec spec;
 
-void initSpec(int argc,char **argv) {
+void initSpec(int argc, char **argv) {
     parseArgs(argc, argv, spec);
 }

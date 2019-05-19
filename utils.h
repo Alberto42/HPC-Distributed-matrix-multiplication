@@ -9,10 +9,11 @@
 #include <iostream>
 
 using namespace std;
+
 template<class T>
-void printArray(T* array,int size, std::ostream& stream) {
-    for(int i=0;i<size;i++) {
-        stream<< array[i] << " ";
+void printArray(T *array, int size, std::ostream &stream) {
+    for (int i = 0; i < size; i++) {
+        stream << array[i] << " ";
     }
     stream << std::endl;
 }
@@ -26,9 +27,11 @@ public:
     Logger();
 
     virtual ~Logger();
+
     template<class T>
     void log(T &s);
-    ofstream& stream();
+
+    ofstream &stream();
 };
 
 void initLogger(int myProcessNo);
@@ -41,6 +44,7 @@ void Logger::log(T &s) {
 namespace utils {
     extern Logger *logger;
 }
+
 template<class T>
 void log(T &s) {
     utils::logger->log(s);
