@@ -29,10 +29,10 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
         pencils = fullMatrixA.split(processesPerGroup);
         localAPencil = pencils[0];
         for (int i = 1; i < processesPerGroup; i++) {
-            pencils[i].send(i,INITIAL_SCATTER_TAG);
+            pencils[i].sendSync(i,INITIAL_SCATTER_TAG);
         }
     } else if (myProcessRank < processesPerGroup) {
-        localAPencil.receive(0,INITIAL_SCATTER_TAG);
+        localAPencil.receiveSync(0,INITIAL_SCATTER_TAG);
     }
     n = localAPencil.n;
 
@@ -113,6 +113,7 @@ void columnAAlgorithm(int argc, char **argv) {
 
     for(int i=0;i<groupsCount;i++) {
         sparseTimesDense(*localAPencil, localBPencil, localCPencil);
+
     }
 
     // gather results

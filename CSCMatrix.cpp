@@ -107,42 +107,20 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
     return matrix;
 }
 
-void CSCMatrix::send(int dest, const int* tags) {
-    MPI_Send(
-            (const void *) this,
-            sizeof(CSCMatrix),
-            MPI_BYTE,
-            dest,
-            tags[0],
-            MPI_COMM_WORLD
-    );
-    MPI_Send(
-            (const void *) nonzeros,
-            count,
-            MPI_DOUBLE,
-            dest,
-            tags[1],
-            MPI_COMM_WORLD
-    );
-    MPI_Send(
-            (const void *) extents,
-            m + 1,
-            MPI_INT,
-            dest,
-            tags[2],
-            MPI_COMM_WORLD
-    );
-    MPI_Send(
-            (const void *) indices,
-            count,
-            MPI_INT,
-            dest,
-            tags[3],
-            MPI_COMM_WORLD
-    );
+void CSCMatrix::sendSync(int dest, const int* tags) {
+    MPI_Send( (const void *) this, sizeof(CSCMatrix), MPI_BYTE, dest, tags[0], MPI_COMM_WORLD );
+    MPI_Send( (const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], MPI_COMM_WORLD );
+    MPI_Send( (const void *) extents, m + 1, MPI_INT, dest, tags[2], MPI_COMM_WORLD );
+    MPI_Send( (const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD );
 }
 
-void CSCMatrix::receive(int src, const int* tags) {
+void CSCMatrix::sendAsync(int dest, const int* tags, MPI_Request *req) {
+    MPI_Isend( (const void *) this, sizeof(CSCMatrix), MPI_BYTE, dest, tags[0], MPI_COMM_WORLD, req);
+    MPI_Isend( (const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], MPI_COMM_WORLD, req+1);
+    MPI_Isend( (const void *) extents, m + 1, MPI_INT, dest, tags[2], MPI_COMM_WORLD, req+2);
+    MPI_Isend( (const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD, req+3);
+}
+void CSCMatrix::receiveSync(int src, const int* tags) {
     MPI_Status status;
     MPI_Recv((void *) this, sizeof(CSCMatrix), MPI_BYTE, src, tags[0], MPI_COMM_WORLD, &status);
     nonzeros = new double[count];
@@ -154,4 +132,17 @@ void CSCMatrix::receive(int src, const int* tags) {
              &status);
     MPI_Recv((void *) indices, count, MPI_INT, src, tags[3], MPI_COMM_WORLD,
              &status);
+}
+
+void CSCMatrix::receiveAsync(int src, const int* tags, MPI_Request *req) {
+    MPI_Irecv((void *) this, sizeof(CSCMatrix), MPI_BYTE, src, tags[0], MPI_COMM_WORLD, req);
+    nonzeros = new double[count];
+    extents = new int[m + 1];
+    indices = new int[count];
+    MPI_Irecv((void *) nonzeros, count, MPI_DOUBLE, src, tags[1],
+             MPI_COMM_WORLD, req+1);
+    MPI_Irecv((void *) extents, m + 1, MPI_INT, src, tags[2], MPI_COMM_WORLD,
+             req+2);
+    MPI_Irecv((void *) indices, count, MPI_INT, src, tags[3], MPI_COMM_WORLD,
+             req+3);
 }
