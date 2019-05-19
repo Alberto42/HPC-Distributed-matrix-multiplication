@@ -25,17 +25,19 @@ double DenseMatrix::get(const int row, const int col) {
 DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed) {
     int columnsInPeace = n / numProcesses;
     DenseMatrix *d = (DenseMatrix *) malloc(sizeof(DenseMatrix) + n * columnsInPeace * sizeof(double));
+
     int colRangeBegin = pencilNumber * columnsInPeace;
     int colRangeEnd = colRangeBegin + columnsInPeace;
+
+    d->n = n;
+    d->m = columnsInPeace;
+    d->shift = colRangeBegin;
 
     for (int row = 0; row < n; row++) {
         for (int col = colRangeBegin; col < colRangeEnd; col++) {
             d->set(row, col, generate_double(seed, row, col));
         }
     }
-    d->n = n;
-    d->m = columnsInPeace;
-    d->shift = colRangeBegin;
     return d;
 }
 

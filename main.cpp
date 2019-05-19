@@ -132,6 +132,8 @@ void printResult(DenseMatrix *receiverCMatrices) {
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
+    const int pencilBCWidth = n / numProcesses;
+    const int BCShift = myProcessRank * pencilBCWidth;
 
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
@@ -139,8 +141,10 @@ void columnAAlgorithm(int argc, char **argv) {
     double startTime, endTime;
 
     init(argc, argv);
-    log("start algorithm");
     calcGroups();
+    createMPICommunicators();
+
+    log("start algorithm");
     const int pencilBCWidth = n / numProcesses;
     const int BCShift = myProcessRank * pencilBCWidth;
 
