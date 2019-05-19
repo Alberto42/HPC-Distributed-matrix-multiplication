@@ -111,6 +111,21 @@ DenseMatrix* gatherResult(DenseMatrix *localCPencil) {
     MPI_Gather((void*)localCPencil, 1, dtDenseMatrix,receiverCMatrices,1, dtDenseMatrix, 0,MPI_COMM_WORLD);
     return receiverCMatrices;
 }
+void printResult(DenseMatrix *receiverCMatrices) {
+    if (myProcessRank == 0) {
+        cout << n << " " << n << endl;
+
+        for(int row=0;row<n;row++) {
+            for (int i = 0; i < numProcesses; i++) {
+                DenseMatrix &m = receiverCMatrices[i];
+                for(int colInM=0;colInM < m.m;colInM++) {
+                    cout << m.get(row,colInM) << " ";
+                }
+            }
+            cout<<endl;
+        }
+    }
+}
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
@@ -145,12 +160,13 @@ void columnAAlgorithm(int argc, char **argv) {
         sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
         shift(localAPencil, localAPencilTmp);
     }
-    DenseMatrix *receiverCMatrices=gatherResult(localCPencil);
+    DenseMatrix *receiverCMatrices = gatherResult(localCPencil);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (myProcessRank == 0) {
         endTime = MPI_Wtime();
     }
+    printResult(receiverCMatrices);
 
     MPI_Finalize();
 }
