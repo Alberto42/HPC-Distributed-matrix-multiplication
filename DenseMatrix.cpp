@@ -5,6 +5,7 @@
 #include "DenseMatrix.h"
 #include "densematgen.h"
 #include <cstdlib>
+#include "utils.h"
 
 
 DenseMatrix::DenseMatrix() {}

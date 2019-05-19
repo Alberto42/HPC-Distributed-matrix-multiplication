@@ -132,8 +132,6 @@ void printResult(DenseMatrix *receiverCMatrices) {
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
-    const int pencilBCWidth = n / numProcesses;
-    const int BCShift = myProcessRank * pencilBCWidth;
 
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
@@ -141,13 +139,18 @@ void columnAAlgorithm(int argc, char **argv) {
     double startTime, endTime;
 
     init(argc, argv);
+    log("start algorithm");
     calcGroups();
+    const int pencilBCWidth = n / numProcesses;
+    const int BCShift = myProcessRank * pencilBCWidth;
 
     if (myProcessRank == 0) {
         ifstream ifs = ifstream(spec.file);
 
         ifs >> fullMatrixA;
     }
+
+    log("Prepare matrices");
     scatterAAmongGroups(fullMatrixA, *localAPencil);
     localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed);
     localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift);
@@ -157,18 +160,22 @@ void columnAAlgorithm(int argc, char **argv) {
         startTime = MPI_Wtime();
     }
 
+    log("replicateAPencils");
     replicateAPencils(*localAPencil);
 
+    log("main loop");
     for (int i = 0; i < groupsCount; i++) {
         sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
         shift(localAPencil, localAPencilTmp);
     }
+    log("gatherResult");
     DenseMatrix *receiverCMatrices = gatherResult(localCPencil);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (myProcessRank == 0) {
         endTime = MPI_Wtime();
     }
+    log("printResult");
     printResult(receiverCMatrices);
 
     MPI_Finalize();

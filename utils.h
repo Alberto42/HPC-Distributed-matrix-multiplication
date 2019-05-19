@@ -50,5 +50,7 @@ void log(T &s) {
     utils::logger->log(s);
 }
 
+ofstream& stream();
+
 
 #endif //AC370756_UTILS_H
