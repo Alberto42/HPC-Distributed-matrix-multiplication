@@ -94,6 +94,7 @@ void calcGroups() {
 void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAPencil;
+    double startTime, endTime;
 
     init(argc, argv);
     calcGroups();
@@ -105,12 +106,21 @@ void sparseTimesDense(int argc, char *argv[]) {
     }
     scatterAAmongGroups(fullMatrixA, localAPencil);
     DenseMatrix localBPencil(myProcessNo, numProcesses, n, spec.seed);
-    // synchronize
-    // start timer
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (myProcessNo == 0) {
+        startTime = MPI_Wtime();
+    }
+
     // replicate matrices inside groups
     // multiply, shift
     // gather results
     // print results
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myProcessNo == 0) {
+        endTime = MPI_Wtime();
+    }
 
     MPI_Finalize();
 }
