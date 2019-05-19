@@ -29,10 +29,10 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
         pencils = fullMatrixA.split(processesPerGroup);
         localAPencil = pencils[0];
         for (int i = 1; i < processesPerGroup; i++) {
-            pencils[i].sendSync(i,INITIAL_SCATTER_TAG);
+            pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
         }
     } else if (myProcessRank < processesPerGroup) {
-        localAPencil.receiveSync(0,INITIAL_SCATTER_TAG);
+        localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
     }
     n = localAPencil.n;
 
@@ -78,59 +78,62 @@ void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
             int colBEnd = B.shift + B.m;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
-                double valueB = B.get(rowB,colB);
+                double valueB = B.get(rowB, colB);
                 result.add(rowA, colB, valueA * valueB);
             }
 
         }
     }
 }
+
 void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
-    localAPencil->sendAsync( (myProcessRank + 1 )% numProcesses, SHIFT_TAGS_SEND, requests);
-    localAPencilTmp->receiveAsync((myProcessRank-1 + numProcesses) % numProcesses, SHIFT_TAGS_RECEIVE, requests+4);
+    localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS_SEND, requests);
+    localAPencilTmp->receiveAsync((myProcessRank - 1 + numProcesses) % numProcesses, SHIFT_TAGS_RECEIVE, requests + 4);
     MPI_Waitall(8, requests, statuses);
 
-    delete [] localAPencil->nonzeros;
-    delete [] localAPencil->extents;
-    delete [] localAPencil->indices;
+    delete[] localAPencil->nonzeros;
+    delete[] localAPencil->extents;
+    delete[] localAPencil->indices;
 
-    swap(localAPencil,localAPencilTmp);
+    swap(localAPencil, localAPencilTmp);
 }
 
-DenseMatrix* gatherResult(DenseMatrix *localCPencil) {
+DenseMatrix *gatherResult(DenseMatrix *localCPencil) {
     MPI_Datatype dtDenseMatrix;
     const size_t localCPencilSize = sizeof(DenseMatrix) + n * localCPencil->m * sizeof(double);
     MPI_Type_contiguous(localCPencilSize, MPI_BYTE, &dtDenseMatrix);
 
     DenseMatrix *receiverCMatrices = nullptr;
     if (myProcessRank == 0) {
-        receiverCMatrices = (DenseMatrix*) malloc(numProcesses * localCPencilSize);
+        receiverCMatrices = (DenseMatrix *) malloc(numProcesses * localCPencilSize);
     }
-    MPI_Gather((void*)localCPencil, 1, dtDenseMatrix,receiverCMatrices,1, dtDenseMatrix, 0,MPI_COMM_WORLD);
+    MPI_Gather((void *) localCPencil, 1, dtDenseMatrix, receiverCMatrices, 1, dtDenseMatrix, 0, MPI_COMM_WORLD);
     return receiverCMatrices;
 }
+
 void printResult(DenseMatrix *receiverCMatrices) {
     if (myProcessRank == 0) {
         cout << n << " " << n << endl;
 
-        for(int row=0;row<n;row++) {
+        for (int row = 0; row < n; row++) {
             for (int i = 0; i < numProcesses; i++) {
                 DenseMatrix &m = receiverCMatrices[i];
-                for(int colInM=0;colInM < m.m;colInM++) {
-                    cout << m.get(row,colInM) << " ";
+                for (int colInM = 0; colInM < m.m; colInM++) {
+                    cout << m.get(row, colInM) << " ";
                 }
             }
-            cout<<endl;
+            cout << endl;
         }
     }
 }
+
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
-    const int pencilBCWidth = n/numProcesses;
-    const int BCShift = myProcessRank*pencilBCWidth;
+    const int pencilBCWidth = n / numProcesses;
+    const int BCShift = myProcessRank * pencilBCWidth;
 
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
@@ -156,7 +159,7 @@ void columnAAlgorithm(int argc, char **argv) {
 
     replicateAPencils(*localAPencil);
 
-    for(int i=0;i<groupsCount;i++) {
+    for (int i = 0; i < groupsCount; i++) {
         sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
         shift(localAPencil, localAPencilTmp);
     }

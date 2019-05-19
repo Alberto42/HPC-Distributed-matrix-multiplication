@@ -23,10 +23,13 @@ public:
     CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
               int shift);
 
-    void sendAsync(int dest, const int* tags, MPI_Request *req);
-    void sendSync(int dest, const int* tags);
-    void receiveSync(int src, const int* tags);
-    void receiveAsync(int src, const int* tags, MPI_Request *req);
+    void sendAsync(int dest, const int *tags, MPI_Request *req);
+
+    void sendSync(int dest, const int *tags);
+
+    void receiveSync(int src, const int *tags);
+
+    void receiveAsync(int src, const int *tags, MPI_Request *req);
 
     vector<CSCMatrix> split(int pencilsCount);
 
