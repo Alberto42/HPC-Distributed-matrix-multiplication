@@ -17,16 +17,17 @@
 namespace po = boost::program_options;
 using namespace std;
 
-int myProcessNo;
+int myProcessRank;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
 int n;
+MPI_Comm myGroup;
 
-void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
+void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
     vector<CSCMatrix> pencils;
-    if (myProcessNo == 0) {
+    if (myProcessRank == 0) {
         pencils = fullMatrixA.split(processesPerGroup);
-        localAColumn = pencils[0];
+        localAPencil = pencils[0];
         for (int i = 1; i < processesPerGroup; i++) {
             MPI_Send(
                     (const void *) &pencils[i],
@@ -61,36 +62,45 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
                     MPI_COMM_WORLD
             );
         }
-    } else {
+    } else if (myProcessRank < processesPerGroup){
         MPI_Status status;
-        MPI_Recv((void *) &localAColumn, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
-        localAColumn.nonzeros = new double[localAColumn.count];
-        localAColumn.extents = new int[localAColumn.m + 1];
-        localAColumn.indices = new int[localAColumn.count];
-        MPI_Recv((void *) localAColumn.nonzeros, localAColumn.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2,
+        MPI_Recv((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
+        localAPencil.nonzeros = new double[localAPencil.count];
+        localAPencil.extents = new int[localAPencil.m + 1];
+        localAPencil.indices = new int[localAPencil.count];
+        MPI_Recv((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2,
                  MPI_COMM_WORLD, &status);
-        MPI_Recv((void *) localAColumn.extents, localAColumn.m + 1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD,
+        MPI_Recv((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD,
                  &status);
-        MPI_Recv((void *) localAColumn.indices, localAColumn.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD,
+        MPI_Recv((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD,
                  &status);
     }
-    n = localAColumn.n;
+    n = localAPencil.n;
 
 }
 void init(int argc,char **argv) {
     initSpec(argc, argv);
     MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessRank);
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
-    initLogger(myProcessNo);
+    initLogger(myProcessRank);
 }
 void calcGroups() {
     assert(numProcesses % spec.c == 0);
     groupsCount = spec.c;
-    groupId = myProcessNo % numProcesses;
+    groupId = myProcessRank % numProcesses;
     processesPerGroup = numProcesses / groupsCount;
 }
 
+void replicateAPencils(CSCMatrix &localAPencil) {
+    MPI_Bcast((void *)&localAPencil, sizeof(CSCMatrix),MPI_BYTE,0,myGroup);
+    MPI_Bcast((void *)localAPencil.nonzeros, localAPencil.count,MPI_DOUBLE,0,myGroup);
+    MPI_Bcast((void *)localAPencil.extents, localAPencil.m+1,MPI_INT,0,myGroup);
+    MPI_Bcast((void *)localAPencil.indices, localAPencil.count, MPI_INT,0,myGroup);
+}
+void createMPICommunicators() {
+    MPI_Comm_split(MPI_COMM_WORLD,myProcessRank % processesPerGroup,myProcessRank,&myGroup);
+}
 void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAPencil;
@@ -99,26 +109,26 @@ void sparseTimesDense(int argc, char *argv[]) {
     init(argc, argv);
     calcGroups();
 
-    if (myProcessNo == 0) {
+    if (myProcessRank == 0) {
         ifstream ifs = ifstream(spec.file);
 
         ifs >> fullMatrixA;
     }
     scatterAAmongGroups(fullMatrixA, localAPencil);
-    DenseMatrix localBPencil(myProcessNo, numProcesses, n, spec.seed);
+    DenseMatrix localBPencil(myProcessRank, numProcesses, n, spec.seed);
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (myProcessNo == 0) {
+    if (myProcessRank == 0) {
         startTime = MPI_Wtime();
     }
 
-    // replicate matrices inside groups
+    replicateAPencils(localAPencil);
     // multiply, shift
     // gather results
     // print results
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (myProcessNo == 0) {
+    if (myProcessRank == 0) {
         endTime = MPI_Wtime();
     }
 
