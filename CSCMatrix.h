@@ -14,11 +14,11 @@ class CSCMatrix {
 public:
     double *nonzeros;
     int *extents, *indices;
-    int n, m, count, maxNonzeroInRow, offset;
+    int n, m, count, maxNonzeroInRow, offset, shift;
 
     CSCMatrix();
 
-    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset);
+    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset, int shift);
 
     vector<CSCMatrix> split(int pencilsCount);
 

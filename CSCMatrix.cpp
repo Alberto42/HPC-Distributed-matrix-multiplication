@@ -17,9 +17,9 @@
 using namespace std;
 CSCMatrix::CSCMatrix() { offset = 0; }
 
-CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset)
+CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset, int shift)
         : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
-          maxNonzeroInRow(maxNonzeroInRow), offset(offset) {}
+          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shift(shift) {}
 
 vector<CSCMatrix> CSCMatrix::split(int pencilsCount) {
     assert(m % pencilsCount == 0);
@@ -36,7 +36,8 @@ vector<CSCMatrix> CSCMatrix::split(int pencilsCount) {
                 columnsInPeace,
                 second - first,
                 -1,
-                first);
+                first,
+                colRangeBegin);
         result.push_back(nextMatrix);
     }
     return result;

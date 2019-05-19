@@ -101,9 +101,29 @@ void replicateAPencils(CSCMatrix &localAPencil) {
 void createMPICommunicators() {
     MPI_Comm_split(MPI_COMM_WORLD,myProcessRank % processesPerGroup,myProcessRank,&myGroup);
 }
-void sparseTimesDense(int argc, char *argv[]) {
+void sparseTimesDense(const CSCMatrix &A, const DenseMatrix &B, DenseMatrix &result) {
+    for(int i=1;i < A.m+1;i++) {
+        int extentBegin = A.extents[i-1]-A.offset;
+        int extentEnd = A.extents[i]-A.offset;
+        int colA = i-1 + A.shift;
+        for(int j=extentBegin;j < extentEnd; j++) {
+            int rowA = A.indices[j];
+            double valueA = A.nonzeros[j];
+            int rowB = colA;
+            int colBBegin = B.shift;
+            int colBEnd = B.shift + B.m;
+            for(int colB = colBBegin;colB < colBEnd;colB++) {
+                double valueB = B.matrix[rowB][colB];
+                result.add(rowA, colB, valueA * valueB);
+            }
+
+        }
+    }
+}
+void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, localAPencil;
+    DenseMatrix localBPencil, localCPencil;
     double startTime, endTime;
 
     init(argc, argv);
@@ -115,7 +135,7 @@ void sparseTimesDense(int argc, char *argv[]) {
         ifs >> fullMatrixA;
     }
     scatterAAmongGroups(fullMatrixA, localAPencil);
-    DenseMatrix localBPencil(myProcessRank, numProcesses, n, spec.seed);
+    localBPencil = DenseMatrix(myProcessRank, numProcesses, n, spec.seed);
     MPI_Barrier(MPI_COMM_WORLD);
 
     if (myProcessRank == 0) {
@@ -123,6 +143,7 @@ void sparseTimesDense(int argc, char *argv[]) {
     }
 
     replicateAPencils(localAPencil);
+
     // multiply, shift
     // gather results
     // print results
@@ -136,5 +157,5 @@ void sparseTimesDense(int argc, char *argv[]) {
 }
 
 int main(int argc, char **argv) {
-    sparseTimesDense(argc, argv);
+    columnAAlgorithm(argc, argv);
 }

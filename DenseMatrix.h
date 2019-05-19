@@ -7,11 +7,13 @@
 
 
 class DenseMatrix {
-    double **matrix;
-    int n,m;
 public:
+    double **matrix;
+    int n,m, shift;
     DenseMatrix(int pencilNumber, int numProcesses, int n, int seed);
     DenseMatrix();
+    DenseMatrix(int n, int m);
+    void add(int row, int col, double value);
 };
 
 
