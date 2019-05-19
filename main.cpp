@@ -85,6 +85,19 @@ void sparseTimesDense(const CSCMatrix &A, const DenseMatrix &B, DenseMatrix &res
         }
     }
 }
+void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
+    MPI_Request requests[8];
+    MPI_Status statuses[8];
+    localAPencil->sendAsync( (myProcessRank + 1 )% numProcesses, SHIFT_TAGS_SEND, requests);
+    localAPencilTmp->receiveAsync((myProcessRank-1 + numProcesses) % numProcesses, SHIFT_TAGS_RECEIVE, requests+4);
+    MPI_Waitall(8, requests, statuses);
+
+    delete [] localAPencil->nonzeros;
+    delete [] localAPencil->extents;
+    delete [] localAPencil->indices;
+
+    swap(localAPencil,localAPencilTmp);
+}
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
@@ -113,7 +126,7 @@ void columnAAlgorithm(int argc, char **argv) {
 
     for(int i=0;i<groupsCount;i++) {
         sparseTimesDense(*localAPencil, localBPencil, localCPencil);
-
+        shift(localAPencil, localAPencilTmp);
     }
 
     // gather results
