@@ -4,38 +4,46 @@
 
 #include "DenseMatrix.h"
 #include "densematgen.h"
+#include <cstdlib>
 
-DenseMatrix::DenseMatrix(int pencilNumber, int numProcesses, int n, int seed) {
-    int columnsInPeace = m / numProcesses;
-    int colRangeBegin = pencilNumber * columnsInPeace;
-    int colRangeEnd = colRangeBegin + columnsInPeace;
-    matrix = new double *[n];
-
-    for (int row = 0; row < n; row++) {
-        matrix[row] = new double[columnsInPeace];
-        for (int col = colRangeBegin; col < colRangeEnd; col++) {
-            matrix[row][col] = generate_double(seed, row, col);
-        }
-    }
-    this->n = n;
-    this->m = columnsInPeace;
-    shift = colRangeBegin;
-
-}
 
 DenseMatrix::DenseMatrix() {}
 
-DenseMatrix::DenseMatrix(int n, int m) {
-    matrix = new double *[n];
-
-    for (int row = 0; row < n; row++) {
-        matrix[row] = new double[m];
-        for (int col = 0; col < n; col++) {
-            matrix[row][col] = 0;
-        }
-    }
+void DenseMatrix::set(int row, int col, double value) {
+    matrix[row*n + col] = value;
 }
 
 void DenseMatrix::add(int row, int col, double value) {
-    matrix[row][col] += value;
+    set(row,col,get(row,col) + value);
+}
+
+double DenseMatrix::get(const int row,const int col) {
+    return matrix[row*n+col];
+}
+
+DenseMatrix* makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed) {
+    int columnsInPeace = n / numProcesses;
+    DenseMatrix *d = (DenseMatrix*) malloc(sizeof(DenseMatrix) + n* columnsInPeace * sizeof(double));
+    int colRangeBegin = pencilNumber * columnsInPeace;
+    int colRangeEnd = colRangeBegin + columnsInPeace;
+
+    for (int row = 0; row < n; row++) {
+        for (int col = colRangeBegin; col < colRangeEnd; col++) {
+            d->set(row,col, generate_double(seed, row, col) );
+        }
+    }
+    d->n = n;
+    d->m = columnsInPeace;
+    d->shift = colRangeBegin;
+    return d;
+}
+
+DenseMatrix* makeDenseMatrix(int n, int m, int shift) {
+    DenseMatrix *d = (DenseMatrix*) malloc(sizeof(DenseMatrix) + n* m * sizeof(double));
+    d->n = n;
+    d->m = m;
+    d->shift = shift;
+    for(int i=0;i<n*m;i++)
+        d->matrix[i] = 0;
+    return d;
 }
