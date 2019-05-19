@@ -133,8 +133,6 @@ void printResult(DenseMatrix *receiverCMatrices) {
 void columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
-    const int pencilBCWidth = n / numProcesses;
-    const int BCShift = myProcessRank * pencilBCWidth;
 
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
