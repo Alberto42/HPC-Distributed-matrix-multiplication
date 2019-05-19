@@ -29,51 +29,10 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
         pencils = fullMatrixA.split(processesPerGroup);
         localAPencil = pencils[0];
         for (int i = 1; i < processesPerGroup; i++) {
-            MPI_Send(
-                    (const void *) &pencils[i],
-                    sizeof(CSCMatrix),
-                    MPI_BYTE,
-                    i,
-                    INITIAL_SCATTER_TAG1,
-                    MPI_COMM_WORLD
-            );
-            MPI_Send(
-                    (const void *) pencils[i].nonzeros,
-                    pencils[i].count,
-                    MPI_DOUBLE,
-                    i,
-                    INITIAL_SCATTER_TAG2,
-                    MPI_COMM_WORLD
-            );
-            MPI_Send(
-                    (const void *) pencils[i].extents,
-                    pencils[i].m + 1,
-                    MPI_INT,
-                    i,
-                    INITIAL_SCATTER_TAG3,
-                    MPI_COMM_WORLD
-            );
-            MPI_Send(
-                    (const void *) pencils[i].indices,
-                    pencils[i].count,
-                    MPI_INT,
-                    i,
-                    INITIAL_SCATTER_TAG4,
-                    MPI_COMM_WORLD
-            );
+            pencils[i].send(i,INITIAL_SCATTER_TAG);
         }
     } else if (myProcessRank < processesPerGroup) {
-        MPI_Status status;
-        MPI_Recv((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, INITIAL_SCATTER_TAG1, MPI_COMM_WORLD, &status);
-        localAPencil.nonzeros = new double[localAPencil.count];
-        localAPencil.extents = new int[localAPencil.m + 1];
-        localAPencil.indices = new int[localAPencil.count];
-        MPI_Recv((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, INITIAL_SCATTER_TAG2,
-                 MPI_COMM_WORLD, &status);
-        MPI_Recv((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, INITIAL_SCATTER_TAG3, MPI_COMM_WORLD,
-                 &status);
-        MPI_Recv((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD,
-                 &status);
+        localAPencil.receive(0,INITIAL_SCATTER_TAG);
     }
     n = localAPencil.n;
 
@@ -126,10 +85,11 @@ void sparseTimesDense(const CSCMatrix &A, const DenseMatrix &B, DenseMatrix &res
         }
     }
 }
-
 void columnAAlgorithm(int argc, char **argv) {
 
-    CSCMatrix fullMatrixA, localAPencil;
+    CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
+    localAPencil = new CSCMatrix();
+    localAPencilTmp = new CSCMatrix();
     DenseMatrix localBPencil, localCPencil;
     double startTime, endTime;
 
@@ -141,7 +101,7 @@ void columnAAlgorithm(int argc, char **argv) {
 
         ifs >> fullMatrixA;
     }
-    scatterAAmongGroups(fullMatrixA, localAPencil);
+    scatterAAmongGroups(fullMatrixA, *localAPencil);
     localBPencil = DenseMatrix(myProcessRank, numProcesses, n, spec.seed);
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -149,9 +109,12 @@ void columnAAlgorithm(int argc, char **argv) {
         startTime = MPI_Wtime();
     }
 
-    replicateAPencils(localAPencil);
+    replicateAPencils(*localAPencil);
 
-    // multiply, shift
+    for(int i=0;i<groupsCount;i++) {
+        sparseTimesDense(*localAPencil, localBPencil, localCPencil);
+    }
+
     // gather results
     // print results
 

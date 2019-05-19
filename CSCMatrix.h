@@ -22,6 +22,9 @@ public:
     CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
               int shift);
 
+    void send(int dest, const int* tags);
+    void receive(int src, const int* tags);
+
     vector<CSCMatrix> split(int pencilsCount);
 
     friend ostream &operator<<(ostream &os, const CSCMatrix &matrix);
