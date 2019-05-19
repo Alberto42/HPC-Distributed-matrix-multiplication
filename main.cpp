@@ -12,6 +12,7 @@
 #include "parseInput.h"
 #include "CSCMatrix.h"
 #include "const.h"
+#include "DenseMatrix.h"
 
 namespace po = boost::program_options;
 using namespace std;
@@ -19,6 +20,7 @@ using namespace std;
 int myProcessNo;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
+int n;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     vector<CSCMatrix> pencils;
@@ -72,6 +74,7 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
         MPI_Recv((void *) localAColumn.indices, localAColumn.count, MPI_INT, 0, INITIAL_SCATTER_TAG4, MPI_COMM_WORLD,
                  &status);
     }
+    n = localAColumn.n;
 
 }
 void init(int argc,char **argv) {
@@ -90,7 +93,7 @@ void calcGroups() {
 
 void sparseTimesDense(int argc, char *argv[]) {
 
-    CSCMatrix fullMatrixA, localAColumn;
+    CSCMatrix fullMatrixA, localAPencil;
 
     init(argc, argv);
     calcGroups();
@@ -100,9 +103,8 @@ void sparseTimesDense(int argc, char *argv[]) {
 
         ifs >> fullMatrixA;
     }
-    scatterAAmongGroups(fullMatrixA, localAColumn);
-    log(localAColumn);
-    // generate appropriate B submatrices
+    scatterAAmongGroups(fullMatrixA, localAPencil);
+    DenseMatrix localBPencil(myProcessNo, numProcesses, n, spec.seed);
     // synchronize
     // start timer
     // replicate matrices inside groups
