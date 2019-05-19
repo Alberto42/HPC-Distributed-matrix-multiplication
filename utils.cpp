@@ -33,3 +33,11 @@ Logger::~Logger() {
 ofstream& Logger::stream() {
     return outfile;
 }
+
+namespace utils {
+    Logger *logger;
+}
+
+void initLogger(int myProcessNo) {
+    utils::logger = new Logger(myProcessNo);
+}

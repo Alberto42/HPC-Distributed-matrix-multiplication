@@ -16,8 +16,6 @@
 namespace po = boost::program_options;
 using namespace std;
 
-Logger *logger;
-
 int myProcessNo;
 int numProcesses;
 int groupId, groupsCount, processesPerGroup;
@@ -76,31 +74,34 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAColumn) {
     }
 
 }
+void init(int argc,char **argv) {
+    initSpec(argc, argv);
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
+    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
+    initLogger(myProcessNo);
+}
+void calcGroups() {
+    assert(numProcesses % spec.c == 0);
+    groupsCount = spec.c;
+    groupId = myProcessNo % numProcesses;
+    processesPerGroup = numProcesses / groupsCount;
+}
+
 void sparseTimesDense(int argc, char *argv[]) {
 
     CSCMatrix fullMatrixA, localAColumn;
 
-    ProgramSpec s;
-    parseArgs(argc, argv, s);
-
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessNo);
-    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
-
-    assert(numProcesses % s.c == 0);
-    groupsCount = s.c;
-    groupId = myProcessNo % numProcesses;
-    processesPerGroup = numProcesses / groupsCount;
-
-    logger = new Logger(myProcessNo);
+    init(argc, argv);
+    calcGroups();
 
     if (myProcessNo == 0) {
-        ifstream ifs = ifstream(s.file);
+        ifstream ifs = ifstream(spec.file);
 
         ifs >> fullMatrixA;
     }
     scatterAAmongGroups(fullMatrixA, localAColumn);
-    logger->log(localAColumn);
+    log(localAColumn);
     // generate appropriate B submatrices
     // synchronize
     // start timer

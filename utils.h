@@ -31,9 +31,20 @@ public:
     ofstream& stream();
 };
 
+void initLogger(int myProcessNo);
+
 template<class T>
 void Logger::log(T &s) {
     outfile << s << endl;
 }
+
+namespace utils {
+    extern Logger *logger;
+}
+template<class T>
+void log(T &s) {
+    utils::logger->log(s);
+}
+
 
 #endif //AC370756_UTILS_H

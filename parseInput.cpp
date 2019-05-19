@@ -69,3 +69,8 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         std::cout << helpMsg << std::endl;
     }
 }
+ProgramSpec spec;
+
+void initSpec(int argc,char **argv) {
+    parseArgs(argc, argv, spec);
+}
