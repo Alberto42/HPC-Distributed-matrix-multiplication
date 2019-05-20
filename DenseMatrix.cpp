@@ -11,7 +11,7 @@
 DenseMatrix::DenseMatrix() {}
 
 void DenseMatrix::set(int row, int col, double value) {
-    matrix[row * n + col] = value;
+    matrix[row * m + col] = value;
 }
 
 void DenseMatrix::add(int row, int col, double value) {
@@ -19,7 +19,19 @@ void DenseMatrix::add(int row, int col, double value) {
 }
 
 double DenseMatrix::get(const int row, const int col) {
-    return matrix[row * n + col];
+    return matrix[row * m + col];
+}
+
+ostream &operator<<(ostream &os, DenseMatrix &matrix) {
+    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shift << endl;
+
+    for(int row=0;row<matrix.n;row++) {
+        for(int col=0;col<matrix.m;col++) {
+            os << matrix.get(row,col) << " ";
+        }
+        os << endl;
+    }
+    return os;
 }
 
 DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed) {

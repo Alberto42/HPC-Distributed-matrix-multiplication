@@ -6,6 +6,8 @@
 #define AC370756_DENSEMATRIX_H
 
 
+#include <ostream>
+
 class DenseMatrix {
 public:
     int n, m, shift;
@@ -18,6 +20,8 @@ public:
     double get(const int row, const int col);
 
     void add(int row, int col, double value);
+
+    friend std::ostream &operator<<(std::ostream &os, DenseMatrix &matrix);
 };
 
 DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed);
