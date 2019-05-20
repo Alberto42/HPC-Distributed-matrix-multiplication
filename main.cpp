@@ -122,7 +122,8 @@ void printResult(DenseMatrix *receiverCMatrices) {
             for (int i = 0; i < numProcesses; i++) {
                 DenseMatrix &m = receiverCMatrices[i];
                 for (int colInM = 0; colInM < m.m; colInM++) {
-                    cout << m.get(row, colInM) << " ";
+                    cout.precision(5);
+                    cout << "   " << fixed << m.get(row, colInM) << " ";
                 }
             }
             cout << endl;
