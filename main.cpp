@@ -19,19 +19,19 @@ using namespace std;
 
 int myProcessRank;
 int numProcesses;
-int groupId, groupsCount, processesPerGroup;
+int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
 int n;
 MPI_Comm myGroup;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
     vector<CSCMatrix> pencils;
     if (myProcessRank == 0) {
-        pencils = fullMatrixA.split(processesPerGroup);
+        pencils = fullMatrixA.split(numberOfGroups);
         localAPencil = pencils[0];
-        for (int i = 1; i < processesPerGroup; i++) {
+        for (int i = 1; i < numberOfGroups; i++) {
             pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
         }
-    } else if (myProcessRank < processesPerGroup) {
+    } else if (myProcessRank < numberOfGroups) {
         localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
     }
     n = localAPencil.n;
@@ -48,9 +48,10 @@ void init(int argc, char **argv) {
 
 void calcGroups() {
     assert(numProcesses % spec.c == 0);
-    groupsCount = spec.c;
-    groupId = myProcessRank % numProcesses;
-    processesPerGroup = numProcesses / groupsCount;
+    numberOfGroups = numProcesses / spec.c;
+
+    groupId = myProcessRank % numberOfGroups;
+    processesPerGroup = spec.c;
 }
 
 void replicateAPencils(CSCMatrix &localAPencil) {
@@ -144,7 +145,7 @@ void columnAAlgorithm(int argc, char **argv) {
     calcGroups();
     createMPICommunicators();
 
-    log("start algorithm");
+    log("start algorithm ------------------------------------------------------------");
     if (myProcessRank == 0) {
         ifstream ifs = ifstream(spec.file);
 
@@ -169,9 +170,9 @@ void columnAAlgorithm(int argc, char **argv) {
     replicateAPencils(*localAPencil);
 
     log("main loop");
-    for (int i = 0; i < groupsCount; i++) {
+    for (int i = 0; i < numberOfGroups; i++) {
         sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
-        if (i == groupsCount - 1)
+        if (i == numberOfGroups - 1)
             break;
         shift(localAPencil, localAPencilTmp);
     }
