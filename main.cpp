@@ -62,7 +62,7 @@ void replicateAPencils(CSCMatrix &localAPencil) {
 }
 
 void createMPICommunicators() {
-    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % processesPerGroup, myProcessRank, &myGroup);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfGroups, myProcessRank, &myGroup);
 }
 
 void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
