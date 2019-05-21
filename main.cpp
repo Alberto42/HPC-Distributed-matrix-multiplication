@@ -144,12 +144,12 @@ DenseMatrix *gatherResult(DenseMatrix *localCPencil) {
 
 void printResult(DenseMatrix *receiverCMatrices) {
     if (myProcessRank == 0) {
-        cout << n << " " << n << endl;
+        cout << nBeforeExtending << " " << nBeforeExtending << endl;
 
-        for (int row = 0; row < n; row++) {
+        for (int row = 0; row < nBeforeExtending; row++) {
             for (int i = 0; i < numProcesses; i++) {
                 DenseMatrix &m = *getIthMatrix(receiverCMatrices, i);
-                for (int colInM = 0; colInM < m.m; colInM++) {
+                for (int colInM = 0; colInM < m.m && m.m * i + colInM < nBeforeExtending; colInM++) {
                     cout.precision(5);
                     cout << "   " << fixed << m.get(row, colInM) << " ";
                 }
@@ -171,7 +171,7 @@ void extendA(CSCMatrix *fullMatrixA, int numProcesses) {
     int n = fullMatrixA->n;
     int tmp = n / numProcesses;
     if (tmp * numProcesses < n) {
-        int targetSize = tmp * (numProcesses+1);
+        int targetSize = (tmp+1) * numProcesses;
         fullMatrixA->n = targetSize;
         fullMatrixA->m = targetSize;
         int *newExtents = new int[targetSize+1];
