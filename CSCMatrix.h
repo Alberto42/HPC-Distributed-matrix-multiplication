@@ -29,7 +29,7 @@ public:
 
     void receiveSync(int src, const int *tags);
 
-    void receiveAsync(int src, const int *tags, MPI_Request *req);
+    void receiveAsync(int src, const int *tags, MPI_Request *req, int m, int maxNonzeros);
 
     vector<CSCMatrix> split(int pencilsCount);
 

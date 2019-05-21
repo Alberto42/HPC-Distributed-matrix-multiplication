@@ -21,6 +21,7 @@ int myProcessRank;
 int numProcesses;
 int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
 int n;
+int maxANonzeros;
 MPI_Comm myGroup;
 
 void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
@@ -28,11 +29,15 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
     if (myProcessRank == 0) {
         pencils = fullMatrixA.split(numberOfGroups);
         localAPencil = pencils[0];
+        maxANonzeros = fullMatrixA.count;
         for (int i = 1; i < numberOfGroups; i++) {
             pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
+            MPI_Send(&fullMatrixA.count,1,MPI_INT,i,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD);
         }
     } else if (myProcessRank < numberOfGroups) {
         localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
+        MPI_Status status;
+        MPI_Recv(&maxANonzeros,1,MPI_INT,0,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD, &status);
     }
     n = localAPencil.n;
 
@@ -59,6 +64,7 @@ void replicateAPencils(CSCMatrix &localAPencil) {
     MPI_Bcast((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, myGroup);
     MPI_Bcast((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, myGroup);
     MPI_Bcast((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, myGroup);
+    MPI_Bcast(&maxANonzeros,1,MPI_INT, 0, myGroup);
 }
 
 void createMPICommunicators() {
@@ -90,8 +96,8 @@ void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
 void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
-    localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS_SEND, requests);
-    localAPencilTmp->receiveAsync((myProcessRank - 1 + numProcesses) % numProcesses, SHIFT_TAGS_RECEIVE, requests + 4);
+    localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests);
+    localAPencilTmp->receiveAsync((myProcessRank - 1 + numProcesses) % numProcesses, SHIFT_TAGS, requests + 4, localAPencil->m, maxANonzeros);
     MPI_Waitall(8, requests, statuses);
 
     delete[] localAPencil->nonzeros;
@@ -171,9 +177,11 @@ void columnAAlgorithm(int argc, char **argv) {
 
     log("main loop");
     for (int i = 0; i < numberOfGroups; i++) {
+        log("sparseTimesDense");
         sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
         if (i == numberOfGroups - 1)
             break;
+        log("shift");
         shift(localAPencil, localAPencilTmp);
     }
 

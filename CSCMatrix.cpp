@@ -135,15 +135,15 @@ void CSCMatrix::receiveSync(int src, const int *tags) {
              &status);
 }
 
-void CSCMatrix::receiveAsync(int src, const int *tags, MPI_Request *req) {
+void CSCMatrix::receiveAsync(int src, const int *tags, MPI_Request *req, int m, int maxNonzeros) {
     MPI_Irecv((void *) this, sizeof(CSCMatrix), MPI_BYTE, src, tags[0], MPI_COMM_WORLD, req);
-    nonzeros = new double[count];
+    nonzeros = new double[maxNonzeros];
     extents = new int[m + 1];
-    indices = new int[count];
-    MPI_Irecv((void *) nonzeros, count, MPI_DOUBLE, src, tags[1],
+    indices = new int[maxNonzeros];
+    MPI_Irecv((void *) nonzeros, maxNonzeros, MPI_DOUBLE, src, tags[1],
               MPI_COMM_WORLD, req + 1);
     MPI_Irecv((void *) extents, m + 1, MPI_INT, src, tags[2], MPI_COMM_WORLD,
               req + 2);
-    MPI_Irecv((void *) indices, count, MPI_INT, src, tags[3], MPI_COMM_WORLD,
+    MPI_Irecv((void *) indices, maxNonzeros, MPI_INT, src, tags[3], MPI_COMM_WORLD,
               req + 3);
 }

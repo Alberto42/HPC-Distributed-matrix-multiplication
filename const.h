@@ -6,7 +6,7 @@
 #define AC370756_CONST_H
 
 const int INITIAL_SCATTER_TAG[4] = {1, 2, 3, 4};
-const int SHIFT_TAGS_SEND[4] = {5, 6, 7, 8};
-const int SHIFT_TAGS_RECEIVE[4] = {9, 10, 11, 12};
+const int SHIFT_TAGS[4] = {5, 6, 7, 8};
+const int SEND_A_NONZEROS_TAG = 9;
 
 #endif //AC370756_CONST_H
