@@ -38,7 +38,7 @@ ostream &operator<<(ostream &os, DenseMatrix &matrix) {
     return os;
 }
 
-DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed) {
+DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed, int nBeforeExtending) {
     int columnsInPeace = n / numProcesses;
     DenseMatrix *d = (DenseMatrix *) malloc(sizeof(DenseMatrix) + n * columnsInPeace * sizeof(double));
 
@@ -51,7 +51,10 @@ DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed
 
     for (int row = 0; row < n; row++) {
         for (int col = colRangeBegin; col < colRangeEnd; col++) {
-            d->set(row, col-colRangeBegin, generate_double(seed, row, col));
+            int colIdxLocal = col - colRangeBegin;
+            if (row < nBeforeExtending && colIdxLocal < nBeforeExtending)
+                d->set(row, colIdxLocal, generate_double(seed, row, col));
+            else d->set(row, colIdxLocal, 0);
         }
     }
     return d;

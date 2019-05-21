@@ -20,7 +20,7 @@ using namespace std;
 int myProcessRank;
 int numProcesses;
 int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
-int n;
+int n, nBeforeExtending;
 int maxANonzeros;
 MPI_Comm myGroup;
 
@@ -33,14 +33,16 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
         for (int i = 1; i < numberOfGroups; i++) {
             pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
             MPI_Send(&fullMatrixA.count,1,MPI_INT,i,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD);
+            MPI_Send(&n,1,MPI_INT,i,SEND_N_TAG,MPI_COMM_WORLD);
+            MPI_Send(&nBeforeExtending,1,MPI_INT,i,SEND_N_BEFORE_EXTENDING_TAG,MPI_COMM_WORLD);
         }
     } else if (myProcessRank < numberOfGroups) {
         localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
         MPI_Status status;
         MPI_Recv(&maxANonzeros,1,MPI_INT,0,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD, &status);
+        MPI_Recv(&n,1,MPI_INT,0,SEND_N_TAG,MPI_COMM_WORLD, &status);
+        MPI_Recv(&nBeforeExtending,1,MPI_INT,0,SEND_N_BEFORE_EXTENDING_TAG,MPI_COMM_WORLD, &status);
     }
-    n = localAPencil.n;
-
 }
 
 void init(int argc, char **argv) {
@@ -163,6 +165,26 @@ void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil
         localCPencil->matrix[i] = 0;
 
 }
+void extendA(CSCMatrix *fullMatrixA, int numProcesses) {
+    assert(fullMatrixA->n == fullMatrixA->m);
+    assert(numProcesses <= fullMatrixA->n);
+    int n = fullMatrixA->n;
+    int tmp = n / numProcesses;
+    if (tmp * numProcesses < n) {
+        int targetSize = tmp * (numProcesses+1);
+        fullMatrixA->n = targetSize;
+        fullMatrixA->m = targetSize;
+        int *newExtents = new int[targetSize+1];
+        for(int i=0;i<targetSize+1;i++) {
+            if (i < n+1)
+                newExtents[i] = fullMatrixA->extents[i];
+            else
+                newExtents[i] = fullMatrixA->extents[n];
+        }
+        delete[] fullMatrixA->extents;
+        fullMatrixA->extents = newExtents;
+    }
+}
 
 void columnAAlgorithm(int argc, char **argv) {
 
@@ -182,15 +204,18 @@ void columnAAlgorithm(int argc, char **argv) {
         ifstream ifs = ifstream(spec.file);
 
         ifs >> fullMatrixA;
+
+        nBeforeExtending = fullMatrixA.n;
+        extendA(&fullMatrixA, numProcesses);
+        n = fullMatrixA.n;
+
     }
 
-    log("Prepare matrices");
     scatterAAmongGroups(fullMatrixA, *localAPencil);
 
-    n = localAPencil->n;
     const int pencilBCWidth = n / numProcesses;
     const int BCShift = myProcessRank * pencilBCWidth;
-    localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed);
+    localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
     localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift);
     MPI_Barrier(MPI_COMM_WORLD);
 

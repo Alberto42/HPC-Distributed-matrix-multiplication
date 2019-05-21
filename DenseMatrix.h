@@ -26,7 +26,7 @@ public:
     size_t size();
 };
 
-DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed);
+DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed, int nBeforeExtending);
 
 DenseMatrix *makeDenseMatrix(int n, int m, int shift);
 
