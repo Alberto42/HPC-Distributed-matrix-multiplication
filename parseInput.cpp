@@ -41,6 +41,11 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
             std::cout << desc << '\n';
             exit(0);
         }
+        int typesOfOutputCount = (vm.find("v") == vm.end()) + (vm.find("g") == vm.end());
+
+        if (typesOfOutputCount != 1) {
+            throw boost::program_options::error("either use -v or -g");
+        }
         s.file = vm["f"].as<std::__cxx11::string>();
         s.seed = vm["s"].as<int>();
         s.c = vm["c"].as<int>();

@@ -136,7 +136,7 @@ void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     delete[] localAPencilTmp->indices;
 }
 
-DenseMatrix *gatherResult(DenseMatrix *localCPencil) {
+DenseMatrix *gatherResultVerbose(DenseMatrix *localCPencil) {
     MPI_Datatype dtDenseMatrix;
     const size_t localCPencilSize = sizeof(DenseMatrix) + n * localCPencil->m * sizeof(double);
     MPI_Type_contiguous(localCPencilSize, MPI_BYTE, &dtDenseMatrix);
@@ -148,6 +148,28 @@ DenseMatrix *gatherResult(DenseMatrix *localCPencil) {
     }
     MPI_Gather((void *) localCPencil, 1, dtDenseMatrix, receiverCMatrices, 1, dtDenseMatrix, 0, MPI_COMM_WORLD);
     return receiverCMatrices;
+}
+
+int gatherResultGreater(DenseMatrix *localCPencil) {
+    int localGreaterCount = 0;
+    for (int row = 0; row < nBeforeExtending; row++) {
+        for (int col = 0; localCPencil->shift + col < nBeforeExtending && col < localCPencil->m; col++) {
+            localGreaterCount += (localCPencil->get(row, col) >= spec.g);
+        }
+    }
+    int *buff = nullptr;
+    if (myProcessRank == 0) {
+        buff = new int[numProcesses];
+    }
+    MPI_Gather(&localGreaterCount, 1, MPI_INT, buff, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (myProcessRank == 0) {
+        int totalCount = 0;
+        for (int i = 0; i < numProcesses; i++)
+            totalCount += buff[i];
+        return totalCount;
+    } else
+        return -1;
+
 }
 
 void printResult(DenseMatrix *receiverCMatrices) {
@@ -201,6 +223,8 @@ void columnAAlgorithm(int argc, char **argv) {
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
     DenseMatrix *localBPencil, *localCPencil;
+    int greaterCount;
+    DenseMatrix *receiverCMatrices;
     double startTime, endTime;
 
     init(argc, argv);
@@ -250,14 +274,24 @@ void columnAAlgorithm(int argc, char **argv) {
     }
 
     log("gatherResult");
-    DenseMatrix *receiverCMatrices = gatherResult(localCPencil);
+
+    if (spec.verbose) {
+        receiverCMatrices = gatherResultVerbose(localCPencil);
+    } else {
+        greaterCount = gatherResultGreater(localCPencil);
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (myProcessRank == 0) {
         endTime = MPI_Wtime();
     }
     log("printResult");
-    printResult(receiverCMatrices);
+    if (spec.verbose) {
+        printResult(receiverCMatrices);
+    } else {
+        if (myProcessRank == 0)
+            cout << greaterCount << endl;
+    }
 
     MPI_Finalize();
     log("after finalize");
