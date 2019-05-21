@@ -156,6 +156,13 @@ void printResult(DenseMatrix *receiverCMatrices) {
         }
     }
 }
+void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
+    assert(localBPencil->size() == localCPencil->size());
+    memcpy(localBPencil, localCPencil, localBPencil->size());
+    for (int i = 0; i < localCPencil->n * localCPencil->m; i++)
+        localCPencil->matrix[i] = 0;
+
+}
 
 void columnAAlgorithm(int argc, char **argv) {
 
@@ -195,13 +202,17 @@ void columnAAlgorithm(int argc, char **argv) {
     replicateAPencils(*localAPencil);
 
     log("main loop");
-    for (int i = 0; i < numberOfGroups; i++) {
-        log("sparseTimesDense");
-        sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
-        if (i == numberOfGroups - 1)
-            break;
-        log("shift");
-        shift(localAPencil, localAPencilTmp);
+    for(int j = 0; j < spec.exponent; j++) {
+        for (int i = 0; i < numberOfGroups; i++) {
+            log("sparseTimesDense");
+            sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
+            if (i == numberOfGroups - 1 && j == spec.exponent - 1)
+                break;
+            log("shift");
+            shift(localAPencil, localAPencilTmp);
+        }
+        if (j != spec.exponent - 1)
+            assignCMatrixToBMatrix(localBPencil,localCPencil);
     }
 
     log("gatherResult");

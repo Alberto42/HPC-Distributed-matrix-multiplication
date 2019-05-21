@@ -22,6 +22,10 @@ double DenseMatrix::get(const int row, const int col) {
     return matrix[row * m + col];
 }
 
+size_t DenseMatrix::size() {
+    return sizeof(DenseMatrix) + n * m * sizeof(double);
+}
+
 ostream &operator<<(ostream &os, DenseMatrix &matrix) {
     os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shift << endl;
 
@@ -64,6 +68,6 @@ DenseMatrix *makeDenseMatrix(int n, int m, int shift) {
 }
 
 DenseMatrix *getIthMatrix(DenseMatrix* first,int i) {
-    size_t len = sizeof(DenseMatrix) + first->n * first->m * sizeof(double);
+    size_t len = first->size();
     return (DenseMatrix*)( (char*)first + len*i );
 }

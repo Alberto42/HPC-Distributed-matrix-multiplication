@@ -12,12 +12,12 @@ object main extends App {
     var result : Boolean = true
     var scanner1 = new Scanner(file1)
     var scanner2 = new Scanner(file2)
-    while(scanner1.hasNextDouble()) {
-      if (!scanner2.hasNextDouble())
+    while(scanner1.hasNextDouble) {
+      if (!scanner2.hasNextDouble)
         result = false
       val d1: Double = scanner1.nextDouble()
       val d2: Double = scanner2.nextDouble()
-      val epsilon : Double = 0.00001
+      val epsilon : Double = 0.000012
       if (scala.math.abs(d1 - d2) > epsilon)
         result = false
     }
@@ -31,6 +31,9 @@ object main extends App {
   val matrixmul: String = "../cmake-build-debug/matrixmul"
   val dir = new File(testsDir)
   private val files: Array[File] = dir.listFiles.filter(_.isFile)
+
+  var successes : Int = 0
+  var failures : Int = 0
 
   files.filter(_.getName.startsWith("result")).sortWith((f1, f2) => f1.getName < f2.getName).foreach(result => {
     val name = """result_(\d+)_000(\d+)_(\d+)_(\d+)""".r
@@ -51,8 +54,10 @@ object main extends App {
           val success: String = s" Success "
           if (filesEqual(myResultFile, result)) {
             println(success)
+            successes+=1
           } else {
             println(failure)
+            failures+=1
             //          "cat" #< myResultFile !
           }
           println()
@@ -62,4 +67,5 @@ object main extends App {
       }
     }
   })
+  println(s"Failures $failures Successes $successes")
 }

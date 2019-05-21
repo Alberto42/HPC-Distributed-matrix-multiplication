@@ -22,6 +22,8 @@ public:
     void add(int row, int col, double value);
 
     friend std::ostream &operator<<(std::ostream &os, DenseMatrix &matrix);
+
+    size_t size();
 };
 
 DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed);
