@@ -119,10 +119,6 @@ void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     localAPencilTmp->extents = extents;
     localAPencilTmp->indices = indices;
 
-    delete[] localAPencil->nonzeros;
-    delete[] localAPencil->extents;
-    delete[] localAPencil->indices;
-
     swap(localAPencil, localAPencilTmp);
 
     delete[] localAPencilTmp->nonzeros;
