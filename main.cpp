@@ -96,15 +96,39 @@ void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
 void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
+
     localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests);
-    localAPencilTmp->receiveAsync((myProcessRank - 1 + numProcesses) % numProcesses, SHIFT_TAGS, requests + 4, localAPencil->m, maxANonzeros);
+
+    int src = (myProcessRank - 1 + numProcesses) % numProcesses;
+
+    MPI_Irecv((void *) localAPencilTmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], MPI_COMM_WORLD, requests + 4);
+
+    double *nonzeros = new double[maxANonzeros];
+    int *extents = new int[localAPencil->m + 1];
+    int *indices = new int[maxANonzeros];
+
+    MPI_Irecv(nonzeros, maxANonzeros, MPI_DOUBLE, src, SHIFT_TAGS[1],
+              MPI_COMM_WORLD, requests + 5);
+    MPI_Irecv(extents, localAPencil->m + 1, MPI_INT, src, SHIFT_TAGS[2], MPI_COMM_WORLD,
+              requests + 6);
+    MPI_Irecv(indices, maxANonzeros, MPI_INT, src, SHIFT_TAGS[3], MPI_COMM_WORLD,
+              requests + 7);
+
     MPI_Waitall(8, requests, statuses);
+
+    localAPencilTmp->nonzeros = nonzeros;
+    localAPencilTmp->extents = extents;
+    localAPencilTmp->indices = indices;
 
     delete[] localAPencil->nonzeros;
     delete[] localAPencil->extents;
     delete[] localAPencil->indices;
 
     swap(localAPencil, localAPencilTmp);
+
+    delete[] localAPencilTmp->nonzeros;
+    delete[] localAPencilTmp->extents;
+    delete[] localAPencilTmp->indices;
 }
 
 DenseMatrix *gatherResult(DenseMatrix *localCPencil) {
