@@ -85,10 +85,9 @@ void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
             int colBEnd = B.shift + B.m;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
-                double valueB = B.get(rowB, colB);
+                double valueB = B.get(rowB, colB-colBBegin);
                 result.add(rowA, colB-colBBegin, valueA * valueB);
             }
-
         }
     }
 }
