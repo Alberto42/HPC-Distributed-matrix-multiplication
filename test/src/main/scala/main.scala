@@ -44,23 +44,24 @@ object main extends App {
 
         val myResultFile = new File(s"../cmake-build-debug/outputs_tests/${result.getName}")
         myResultFile.createNewFile()
+        List((1, 1),(3,1),(7,1),(2,2)).foreach {
+          case (n, c) => {
+            val runCommand = s"mpiexec -n $n $matrixmul -f ${sparseMatrix.getCanonicalPath} -s $a -c $c -e $x"
+            val ret = runCommand #> myResultFile !
 
-        for(i <- 1 to 10) {
-          val runCommand = s"mpiexec -n $i $matrixmul -f ${sparseMatrix.getCanonicalPath} -s $a -c 1 -e $x"
-          val ret = runCommand #> myResultFile !
-
-          println(s"Test ${result.getName} \n$runCommand")
-          val failure: String = s" Failure :( "
-          val success: String = s" Success "
-          if (filesEqual(myResultFile, result)) {
-            println(success)
-            successes+=1
-          } else {
-            println(failure)
-            failures+=1
-            //          "cat" #< myResultFile !
+            println(s"Test ${result.getName} \n$runCommand")
+            val failure: String = s" Failure :( "
+            val success: String = s" Success "
+            if (filesEqual(myResultFile, result)) {
+              println(success)
+              successes += 1
+            } else {
+              println(failure)
+              failures += 1
+              //          "cat" #< myResultFile !
+            }
+            println()
           }
-          println()
         }
 
 

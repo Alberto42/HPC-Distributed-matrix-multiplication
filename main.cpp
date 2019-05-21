@@ -63,10 +63,18 @@ void calcGroups() {
 
 void replicateAPencils(CSCMatrix &localAPencil) {
     MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
+    if (myProcessRank >= numberOfGroups) {
+        localAPencil.nonzeros = new double[localAPencil.count];
+        localAPencil.extents = new int [localAPencil.m + 1 ];
+        localAPencil.indices = new int [localAPencil.count];
+    }
     MPI_Bcast((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, myGroup);
     MPI_Bcast((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, myGroup);
     MPI_Bcast((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, myGroup);
+
     MPI_Bcast(&maxANonzeros,1,MPI_INT, 0, myGroup);
+    MPI_Bcast(&n,1,MPI_INT,0, myGroup);
+    MPI_Bcast(&nBeforeExtending,1,MPI_INT, 0, myGroup);
 }
 
 void createMPICommunicators() {
@@ -213,18 +221,19 @@ void columnAAlgorithm(int argc, char **argv) {
 
     scatterAAmongGroups(fullMatrixA, *localAPencil);
 
-    const int pencilBCWidth = n / numProcesses;
-    const int BCShift = myProcessRank * pencilBCWidth;
-    localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
-    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift);
-    MPI_Barrier(MPI_COMM_WORLD);
 
+    MPI_Barrier(MPI_COMM_WORLD);
     if (myProcessRank == 0) {
         startTime = MPI_Wtime();
     }
 
     log("replicateAPencils");
     replicateAPencils(*localAPencil);
+
+    const int pencilBCWidth = n / numProcesses;
+    const int BCShift = myProcessRank * pencilBCWidth;
+    localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
+    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift);
 
     log("main loop");
     for(int j = 0; j < spec.exponent; j++) {
