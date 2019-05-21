@@ -62,3 +62,8 @@ DenseMatrix *makeDenseMatrix(int n, int m, int shift) {
         d->matrix[i] = 0;
     return d;
 }
+
+DenseMatrix *getIthMatrix(DenseMatrix* first,int i) {
+    size_t len = sizeof(DenseMatrix) + first->n * first->m * sizeof(double);
+    return (DenseMatrix*)( (char*)first + len*i );
+}

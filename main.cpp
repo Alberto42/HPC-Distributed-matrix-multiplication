@@ -151,7 +151,7 @@ void printResult(DenseMatrix *receiverCMatrices) {
 
         for (int row = 0; row < n; row++) {
             for (int i = 0; i < numProcesses; i++) {
-                DenseMatrix &m = receiverCMatrices[i];
+                DenseMatrix &m = *getIthMatrix(receiverCMatrices, i);
                 for (int colInM = 0; colInM < m.m; colInM++) {
                     cout.precision(5);
                     cout << "   " << fixed << m.get(row, colInM) << " ";
@@ -220,6 +220,7 @@ void columnAAlgorithm(int argc, char **argv) {
     printResult(receiverCMatrices);
 
     MPI_Finalize();
+    log("after finalize");
 }
 
 int main(int argc, char **argv) {
