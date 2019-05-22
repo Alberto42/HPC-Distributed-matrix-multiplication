@@ -255,9 +255,9 @@ void columnAAlgorithm(int argc, char **argv) {
     replicateAPencils(*localAPencil);
 
     const int pencilBCWidth = n / numProcesses;
-    const int BCShift = myProcessRank * pencilBCWidth;
+    const int BCOffset = myProcessRank * pencilBCWidth;
     localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
-    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift);
+    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCOffset);
 
     log("main loop");
     for(int j = 0; j < spec.exponent; j++) {
