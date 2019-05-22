@@ -17,6 +17,7 @@
 #include "src/algorithms/BlockedColumnA.h"
 #include "src/algorithms/BlockedInnerABC.h"
 #include "src/const.h"
+#include "src/matrices/SparseMatrix.h"
 
 using namespace std;
 
@@ -80,7 +81,7 @@ void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseM
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
-        int colA = i - 1 + A.shift;
+        int colA = i - 1 + A.shiftHorizontal;
 
         for (int j = extentBegin; j < extentEnd; j++) {
             int rowA = A.indices[j];

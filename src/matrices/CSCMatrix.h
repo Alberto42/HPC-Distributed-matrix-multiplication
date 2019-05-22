@@ -9,29 +9,17 @@
 #include <fstream>
 #include <assert.h>
 #include <mpi.h>
+#include "SparseMatrix.h"
 
 using namespace std;
 
-class CSCMatrix {
+class CSCMatrix : public SparseMatrix{
 public:
-    double *nonzeros;
-    int *extents, *indices;
-    int n, m, count, maxNonzeroInRow, offset, shift;
 
-    CSCMatrix();
-
-    CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
-              int shift);
-
-    void sendAsync(int dest, const int *tags, MPI_Request *req);
-
-    void sendSync(int dest, const int *tags);
-
-    void receiveSync(int src, const int *tags);
-
-    void receiveAsync(int src, const int *tags, MPI_Request *req, int m, int maxNonzeros);
+    using SparseMatrix::SparseMatrix;
 
     vector<CSCMatrix> split(int pencilsCount);
+    size_t getSize();
 
     friend ostream &operator<<(ostream &os, const CSCMatrix &matrix);
 };

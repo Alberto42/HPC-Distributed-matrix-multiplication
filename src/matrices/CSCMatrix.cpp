@@ -4,6 +4,7 @@
 
 #include "CSCMatrix.h"
 #include "src/utils.h"
+#include "SparseMatrix.h"
 #include <iostream>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -17,12 +18,6 @@
 
 using namespace std;
 
-CSCMatrix::CSCMatrix() { offset = 0; }
-
-CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
-                     int offset, int shift)
-        : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
-          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shift(shift) {}
 
 vector<CSCMatrix> CSCMatrix::split(int pencilsCount) {
     assert(m % pencilsCount == 0);
@@ -54,6 +49,10 @@ ostream &operator<<(ostream &os, const CSCMatrix &matrix) {
     printArray<int>(matrix.extents, matrix.m + 1, os);
     printArray<int>(matrix.indices, matrix.count, os);
     return os;
+}
+
+size_t CSCMatrix::getSize() {
+    return sizeof(CSCMatrix);
 }
 
 CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
@@ -107,43 +106,3 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
     return matrix;
 }
 
-void CSCMatrix::sendSync(int dest, const int *tags) {
-    MPI_Send((const void *) this, sizeof(CSCMatrix), MPI_BYTE, dest, tags[0], MPI_COMM_WORLD);
-    MPI_Send((const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], MPI_COMM_WORLD);
-    MPI_Send((const void *) extents, m + 1, MPI_INT, dest, tags[2], MPI_COMM_WORLD);
-    MPI_Send((const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD);
-}
-
-void CSCMatrix::sendAsync(int dest, const int *tags, MPI_Request *req) {
-    MPI_Isend((const void *) this, sizeof(CSCMatrix), MPI_BYTE, dest, tags[0], MPI_COMM_WORLD, req);
-    MPI_Isend((const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], MPI_COMM_WORLD, req + 1);
-    MPI_Isend((const void *) extents, m + 1, MPI_INT, dest, tags[2], MPI_COMM_WORLD, req + 2);
-    MPI_Isend((const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD, req + 3);
-}
-
-void CSCMatrix::receiveSync(int src, const int *tags) {
-    MPI_Status status;
-    MPI_Recv((void *) this, sizeof(CSCMatrix), MPI_BYTE, src, tags[0], MPI_COMM_WORLD, &status);
-    nonzeros = new double[count];
-    extents = new int[m + 1];
-    indices = new int[count];
-    MPI_Recv((void *) nonzeros, count, MPI_DOUBLE, src, tags[1],
-             MPI_COMM_WORLD, &status);
-    MPI_Recv((void *) extents, m + 1, MPI_INT, src, tags[2], MPI_COMM_WORLD,
-             &status);
-    MPI_Recv((void *) indices, count, MPI_INT, src, tags[3], MPI_COMM_WORLD,
-             &status);
-}
-
-void CSCMatrix::receiveAsync(int src, const int *tags, MPI_Request *req, int m, int maxNonzeros) {
-    MPI_Irecv((void *) this, sizeof(CSCMatrix), MPI_BYTE, src, tags[0], MPI_COMM_WORLD, req);
-    nonzeros = new double[maxNonzeros];
-    extents = new int[m + 1];
-    indices = new int[maxNonzeros];
-    MPI_Irecv((void *) nonzeros, maxNonzeros, MPI_DOUBLE, src, tags[1],
-              MPI_COMM_WORLD, req + 1);
-    MPI_Irecv((void *) extents, m + 1, MPI_INT, src, tags[2], MPI_COMM_WORLD,
-              req + 2);
-    MPI_Irecv((void *) indices, maxNonzeros, MPI_INT, src, tags[3], MPI_COMM_WORLD,
-              req + 3);
-}
