@@ -1,30 +1,26 @@
+//
+// Created by albert on 22.05.19.
+//
+
+#include "BlockedColumnA.h"
+
 #include <iostream>
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/variables_map.hpp>
-#include <boost/program_options.hpp>
-#include <boost/algorithm/string/replace.hpp>
 #include <string>
 #include <mpi.h>
 #include <fstream>
 #include <sys/stat.h>
 #include <algorithm>
-#include "utils.h"
-#include "parseInput.h"
-#include "CSCMatrix.h"
-#include "const.h"
-#include "DenseMatrix.h"
+#include <src/matrices/CSCMatrix.h>
+#include <src/utils.h>
+#include <src/matrices/DenseMatrix.h>
+#include "src/parseInput.h"
+#include "src/algorithms/BlockedColumnA.h"
+#include "src/algorithms/BlockedInnerABC.h"
+#include "src/const.h"
 
-namespace po = boost::program_options;
 using namespace std;
 
-int myProcessRank;
-int numProcesses;
-int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
-int n, nBeforeExtending;
-int maxANonzeros;
-MPI_Comm myGroup;
-
-void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
+void BlockedColumnA::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
     vector<CSCMatrix> pencils;
     if (myProcessRank == 0) {
         pencils = fullMatrixA.split(numberOfGroups);
@@ -32,28 +28,27 @@ void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
         maxANonzeros = fullMatrixA.count;
         for (int i = 1; i < numberOfGroups; i++) {
             pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
-            MPI_Send(&fullMatrixA.count,1,MPI_INT,i,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD);
-            MPI_Send(&n,1,MPI_INT,i,SEND_N_TAG,MPI_COMM_WORLD);
-            MPI_Send(&nBeforeExtending,1,MPI_INT,i,SEND_N_BEFORE_EXTENDING_TAG,MPI_COMM_WORLD);
+            MPI_Send(&fullMatrixA.count, 1, MPI_INT, i, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD);
+            MPI_Send(&n, 1, MPI_INT, i, SEND_N_TAG, MPI_COMM_WORLD);
+            MPI_Send(&nBeforeExtending, 1, MPI_INT, i, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD);
         }
     } else if (myProcessRank < numberOfGroups) {
         localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
         MPI_Status status;
-        MPI_Recv(&maxANonzeros,1,MPI_INT,0,SEND_A_NONZEROS_TAG,MPI_COMM_WORLD, &status);
-        MPI_Recv(&n,1,MPI_INT,0,SEND_N_TAG,MPI_COMM_WORLD, &status);
-        MPI_Recv(&nBeforeExtending,1,MPI_INT,0,SEND_N_BEFORE_EXTENDING_TAG,MPI_COMM_WORLD, &status);
+        MPI_Recv(&maxANonzeros, 1, MPI_INT, 0, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&n, 1, MPI_INT, 0, SEND_N_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nBeforeExtending, 1, MPI_INT, 0, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD, &status);
     }
 }
 
-void init(int argc, char **argv) {
-    initSpec(argc, argv);
+void BlockedColumnA::init(int argc, char **argv) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myProcessRank);
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     initLogger(myProcessRank);
 }
 
-void calcGroups() {
+void BlockedColumnA::calcGroups() {
     assert(numProcesses % spec.c == 0);
     numberOfGroups = numProcesses / spec.c;
 
@@ -61,27 +56,27 @@ void calcGroups() {
     processesPerGroup = spec.c;
 }
 
-void replicateAPencils(CSCMatrix &localAPencil) {
+void BlockedColumnA::replicateAPencils(CSCMatrix &localAPencil) {
     MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
     if (myProcessRank >= numberOfGroups) {
         localAPencil.nonzeros = new double[localAPencil.count];
-        localAPencil.extents = new int [localAPencil.m + 1 ];
-        localAPencil.indices = new int [localAPencil.count];
+        localAPencil.extents = new int[localAPencil.m + 1];
+        localAPencil.indices = new int[localAPencil.count];
     }
     MPI_Bcast((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, myGroup);
     MPI_Bcast((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, myGroup);
     MPI_Bcast((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, myGroup);
 
-    MPI_Bcast(&maxANonzeros,1,MPI_INT, 0, myGroup);
-    MPI_Bcast(&n,1,MPI_INT,0, myGroup);
-    MPI_Bcast(&nBeforeExtending,1,MPI_INT, 0, myGroup);
+    MPI_Bcast(&maxANonzeros, 1, MPI_INT, 0, myGroup);
+    MPI_Bcast(&n, 1, MPI_INT, 0, myGroup);
+    MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
 }
 
-void createMPICommunicators() {
+void BlockedColumnA::createMPICommunicators() {
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfGroups, myProcessRank, &myGroup);
 }
 
-void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
+void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
@@ -95,14 +90,14 @@ void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
             int colBEnd = B.shift + B.m;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
-                double valueB = B.get(rowB, colB-colBBegin);
-                result.add(rowA, colB-colBBegin, valueA * valueB);
+                double valueB = B.get(rowB, colB - colBBegin);
+                result.add(rowA, colB - colBBegin, valueA * valueB);
             }
         }
     }
 }
 
-void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
+void BlockedColumnA::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
@@ -136,7 +131,7 @@ void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
     delete[] localAPencilTmp->indices;
 }
 
-DenseMatrix *gatherResultVerbose(DenseMatrix *localCPencil) {
+DenseMatrix *BlockedColumnA::gatherResultVerbose(DenseMatrix *localCPencil) {
     MPI_Datatype dtDenseMatrix;
     const size_t localCPencilSize = sizeof(DenseMatrix) + n * localCPencil->m * sizeof(double);
     MPI_Type_contiguous(localCPencilSize, MPI_BYTE, &dtDenseMatrix);
@@ -150,7 +145,7 @@ DenseMatrix *gatherResultVerbose(DenseMatrix *localCPencil) {
     return receiverCMatrices;
 }
 
-int gatherResultGreater(DenseMatrix *localCPencil) {
+int BlockedColumnA::gatherResultGreater(DenseMatrix *localCPencil) {
     int localGreaterCount = 0;
     for (int row = 0; row < nBeforeExtending; row++) {
         for (int col = 0; localCPencil->shift + col < nBeforeExtending && col < localCPencil->m; col++) {
@@ -172,7 +167,7 @@ int gatherResultGreater(DenseMatrix *localCPencil) {
 
 }
 
-void printResult(DenseMatrix *receiverCMatrices) {
+void BlockedColumnA::printResult(DenseMatrix *receiverCMatrices) {
     if (myProcessRank == 0) {
         cout << nBeforeExtending << " " << nBeforeExtending << endl;
 
@@ -188,25 +183,27 @@ void printResult(DenseMatrix *receiverCMatrices) {
         }
     }
 }
-void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
+
+void BlockedColumnA::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
     assert(localBPencil->size() == localCPencil->size());
     memcpy(localBPencil, localCPencil, localBPencil->size());
     for (int i = 0; i < localCPencil->n * localCPencil->m; i++)
         localCPencil->matrix[i] = 0;
 
 }
-void extendA(CSCMatrix *fullMatrixA, int numProcesses) {
+
+void BlockedColumnA::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
     assert(fullMatrixA->n == fullMatrixA->m);
     assert(numProcesses <= fullMatrixA->n);
     int n = fullMatrixA->n;
     int tmp = n / numProcesses;
     if (tmp * numProcesses < n) {
-        int targetSize = (tmp+1) * numProcesses;
+        int targetSize = (tmp + 1) * numProcesses;
         fullMatrixA->n = targetSize;
         fullMatrixA->m = targetSize;
-        int *newExtents = new int[targetSize+1];
-        for(int i=0;i<targetSize+1;i++) {
-            if (i < n+1)
+        int *newExtents = new int[targetSize + 1];
+        for (int i = 0; i < targetSize + 1; i++) {
+            if (i < n + 1)
                 newExtents[i] = fullMatrixA->extents[i];
             else
                 newExtents[i] = fullMatrixA->extents[n];
@@ -216,7 +213,7 @@ void extendA(CSCMatrix *fullMatrixA, int numProcesses) {
     }
 }
 
-void columnAAlgorithm(int argc, char **argv) {
+void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;
 
@@ -260,7 +257,7 @@ void columnAAlgorithm(int argc, char **argv) {
     localCPencil = makeDenseMatrix(n, pencilBCWidth, BCOffset);
 
     log("main loop");
-    for(int j = 0; j < spec.exponent; j++) {
+    for (int j = 0; j < spec.exponent; j++) {
         for (int i = 0; i < numberOfGroups; i++) {
             log("sparseTimesDense");
             sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
@@ -270,7 +267,7 @@ void columnAAlgorithm(int argc, char **argv) {
             shift(localAPencil, localAPencilTmp);
         }
         if (j != spec.exponent - 1)
-            assignCMatrixToBMatrix(localBPencil,localCPencil);
+            assignCMatrixToBMatrix(localBPencil, localCPencil);
     }
 
     log("gatherResult");
@@ -295,8 +292,4 @@ void columnAAlgorithm(int argc, char **argv) {
 
     MPI_Finalize();
     log("after finalize");
-}
-
-int main(int argc, char **argv) {
-    columnAAlgorithm(argc, argv);
 }

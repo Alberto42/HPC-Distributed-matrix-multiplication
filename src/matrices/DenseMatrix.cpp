@@ -3,9 +3,9 @@
 //
 
 #include "DenseMatrix.h"
-#include "densematgen.h"
+#include "src/densematgen.h"
 #include <cstdlib>
-#include "utils.h"
+#include "src/utils.h"
 
 
 DenseMatrix::DenseMatrix() {}
