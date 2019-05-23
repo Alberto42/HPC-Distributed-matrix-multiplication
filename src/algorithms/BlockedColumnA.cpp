@@ -17,7 +17,6 @@
 #include "src/algorithms/BlockedColumnA.h"
 #include "src/algorithms/BlockedInnerABC.h"
 #include "src/const.h"
-#include "src/matrices/SparseMatrix.h"
 
 using namespace std;
 
