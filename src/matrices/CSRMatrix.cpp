@@ -34,8 +34,8 @@ vector<CSRMatrix> CSRMatrix::split(int peacesCount) {
                 second - first,
                 -1,
                 first,
-                rowRangeBegin,
-                0);
+                rowRangeBegin
+                );
         result.push_back(nextMatrix);
     }
     return result;
@@ -63,9 +63,9 @@ CSRMatrix operator>>(istream &stream, CSRMatrix &matrix) {
 CSRMatrix::CSRMatrix() { offset = 0; }
 
 CSRMatrix::CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
-                     int offset, int shiftHorizontal, int shiftVertical)
+                     int offset, int shiftVertical)
         : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
-          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shiftHorizontal(shiftHorizontal), shiftVertical(shiftVertical) {}
+          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shiftVertical(shiftVertical) {}
 
 void CSRMatrix::sendSync(int dest, const int *tags) {
     size_t size = sizeof(CSRMatrix);
@@ -101,7 +101,7 @@ void CSRMatrix::receiveSync(int src, const int *tags) {
 ostream &operator<<(ostream &os, const CSRMatrix &matrix) {
     os << "nonzeros: " << matrix.nonzeros << " extents: " << matrix.extents << " indices: " << matrix.indices << " n: "
        << matrix.n << " m: " << matrix.m << " count: " << matrix.count << " maxNonzeroInRow: " << matrix.maxNonzeroInRow
-       << " offset: " << matrix.offset << " shiftHorizontal: " << matrix.shiftHorizontal << " shiftVertical: "
+       << " offset: " << matrix.offset <<  " shiftVertical: "
        << matrix.shiftVertical;
     printArray<double>(matrix.nonzeros, matrix.count, os);
     printArray<int>(matrix.extents, matrix.m + 1, os);

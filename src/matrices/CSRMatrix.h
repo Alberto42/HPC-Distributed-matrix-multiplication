@@ -20,18 +20,17 @@ public:
 
     vector<CSRMatrix> split(int peacesCount);
 
-//    friend ostream &operator<<(ostream &os, const CSRMatrix &matrix);
     friend ostream &operator<<(ostream &os, const CSRMatrix &matrix);
 
     CSRMatrix();
 
     CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
-              int shiftHorizontal, int shiftVertical);
+            int shiftVertical);
 
 
     double *nonzeros;
     int *extents, *indices;
-    int n, m, count, maxNonzeroInRow, offset, shiftHorizontal, shiftVertical;
+    int n, m, count, maxNonzeroInRow, offset, shiftVertical;
 
     void sendSync(int dest, const int *tags);
 
