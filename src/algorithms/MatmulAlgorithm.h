@@ -11,7 +11,10 @@ public:
 
     int myProcessRank;
     int numProcesses;
+    int numberOfGroups;
     void init(int argc, char **argv);
+
+    void calcGroups();
 };
 
 

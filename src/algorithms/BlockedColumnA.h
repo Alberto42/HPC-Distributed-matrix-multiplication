@@ -14,7 +14,6 @@ using namespace std;
 
 
 class BlockedColumnA : public MatmulAlgorithm {
-    int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
     int n, nBeforeExtending;
     int maxANonzeros;
     MPI_Comm myGroup;
@@ -22,10 +21,6 @@ public:
     void columnAAlgorithm(int argc, char **argv);
 
     void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil);
-
-    void init(int argc, char **argv);
-
-    void calcGroups();
 
     void replicateAPencils(CSCMatrix &localAPencil);
 

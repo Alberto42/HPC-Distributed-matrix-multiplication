@@ -41,21 +41,6 @@ void BlockedColumnA::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &loca
     }
 }
 
-void BlockedColumnA::init(int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myProcessRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
-    initLogger(myProcessRank);
-}
-
-void BlockedColumnA::calcGroups() {
-    assert(numProcesses % spec.c == 0);
-    numberOfGroups = numProcesses / spec.c;
-
-    groupId = myProcessRank % numberOfGroups;
-    processesPerGroup = spec.c;
-}
-
 void BlockedColumnA::replicateAPencils(CSCMatrix &localAPencil) {
     MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
     if (myProcessRank >= numberOfGroups) {

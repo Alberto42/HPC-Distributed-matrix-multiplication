@@ -14,4 +14,5 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 
     init(argc, argv);
 
+
 }
