@@ -177,26 +177,7 @@ void BlockedColumnA::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatr
 
 }
 
-void BlockedColumnA::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
-    assert(fullMatrixA->n == fullMatrixA->m);
-    assert(numProcesses <= fullMatrixA->n);
-    int n = fullMatrixA->n;
-    int tmp = n / numProcesses;
-    if (tmp * numProcesses < n) {
-        int targetSize = (tmp + 1) * numProcesses;
-        fullMatrixA->n = targetSize;
-        fullMatrixA->m = targetSize;
-        int *newExtents = new int[targetSize + 1];
-        for (int i = 0; i < targetSize + 1; i++) {
-            if (i < n + 1)
-                newExtents[i] = fullMatrixA->extents[i];
-            else
-                newExtents[i] = fullMatrixA->extents[n];
-        }
-        delete[] fullMatrixA->extents;
-        fullMatrixA->extents = newExtents;
-    }
-}
+
 
 void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 

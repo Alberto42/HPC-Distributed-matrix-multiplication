@@ -14,7 +14,7 @@ using namespace std;
 
 
 class BlockedColumnA : public MatmulAlgorithm {
-    int n, nBeforeExtending;
+
     int maxANonzeros;
     MPI_Comm myGroup;
 public:
@@ -37,8 +37,6 @@ public:
     void printResult(DenseMatrix *receiverCMatrices);
 
     void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil);
-
-    void extendA(CSCMatrix *fullMatrixA, int numProcesses);
 };
 
 

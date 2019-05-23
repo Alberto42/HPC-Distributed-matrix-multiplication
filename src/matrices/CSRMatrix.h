@@ -12,9 +12,10 @@
 #include <assert.h>
 #include <mpi.h>
 #include <ostream>
+#include "CSCMatrix.h"
 
 using namespace std;
-class CSRMatrix{
+class CSRMatrix : public CSCMatrix {
 public:
 
     vector<CSRMatrix> split(int peacesCount);

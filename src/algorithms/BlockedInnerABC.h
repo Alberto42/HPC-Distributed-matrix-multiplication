@@ -11,6 +11,8 @@
 class BlockedInnerABC : public MatmulAlgorithm{
 public:
     void innerABCAlgorithm(int argc,char **argv);
+
+    void createMPICommunicators();
 };
 
 
