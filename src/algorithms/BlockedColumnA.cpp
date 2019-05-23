@@ -20,22 +20,6 @@
 
 using namespace std;
 
-void BlockedColumnA::replicateAPencils(CSCMatrix &localAPencil) {
-    MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
-    if (myProcessRank >= numberOfBlocks) {
-        localAPencil.nonzeros = new double[localAPencil.count];
-        localAPencil.extents = new int[localAPencil.m + 1];
-        localAPencil.indices = new int[localAPencil.count];
-    }
-    MPI_Bcast((void *) localAPencil.nonzeros, localAPencil.count, MPI_DOUBLE, 0, myGroup);
-    MPI_Bcast((void *) localAPencil.extents, localAPencil.m + 1, MPI_INT, 0, myGroup);
-    MPI_Bcast((void *) localAPencil.indices, localAPencil.count, MPI_INT, 0, myGroup);
-
-    MPI_Bcast(&maxANonzeros, 1, MPI_INT, 0, myGroup);
-    MPI_Bcast(&n, 1, MPI_INT, 0, myGroup);
-    MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
-}
-
 void BlockedColumnA::createMPICommunicators() {
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &myGroup);
 }
@@ -59,6 +43,11 @@ void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseM
             }
         }
     }
+}
+
+void BlockedColumnA::calcGroups() {
+    assert(numProcesses % spec.c == 0);
+    numberOfBlocks = numProcesses / spec.c;
 }
 
 void BlockedColumnA::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
@@ -193,8 +182,8 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
         startTime = MPI_Wtime();
     }
 
-    log("replicateAPencils");
-    replicateAPencils(*localAPencil);
+    log("replicateA");
+    replicateA(*localAPencil);
 
     const int pencilBCWidth = n / numProcesses;
     const int BCOffset = myProcessRank * pencilBCWidth;

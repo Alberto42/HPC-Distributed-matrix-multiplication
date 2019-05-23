@@ -14,7 +14,7 @@ public:
 
     void createMPICommunicators();
 
-    void replicateAPencils(CSCMatrix &localAPencil);
+    void calcGroups();
 };
 
 

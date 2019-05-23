@@ -18,11 +18,6 @@ void MatmulAlgorithm::init(int argc, char **argv) {
     initLogger(myProcessRank);
 }
 
-void MatmulAlgorithm::calcGroups() {
-    assert(numProcesses % spec.c == 0);
-    numberOfBlocks = numProcesses / spec.c;
-}
-
 void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
     assert(fullMatrixA->n == fullMatrixA->m);
     assert(numProcesses <= fullMatrixA->n);
@@ -63,4 +58,20 @@ void MatmulAlgorithm::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &loc
         MPI_Recv(&n, 1, MPI_INT, 0, SEND_N_TAG, MPI_COMM_WORLD, &status);
         MPI_Recv(&nBeforeExtending, 1, MPI_INT, 0, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD, &status);
     }
+}
+
+void MatmulAlgorithm::replicateA(CSCMatrix &localA) {
+    MPI_Bcast((void *) &localA, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
+    if (myProcessRank >= numberOfBlocks) {
+        localA.nonzeros = new double[localA.count];
+        localA.extents = new int[localA.m + 1];
+        localA.indices = new int[localA.count];
+    }
+    MPI_Bcast((void *) localA.nonzeros, localA.count, MPI_DOUBLE, 0, myGroup);
+    MPI_Bcast((void *) localA.extents, localA.m + 1, MPI_INT, 0, myGroup);
+    MPI_Bcast((void *) localA.indices, localA.count, MPI_INT, 0, myGroup);
+
+    MPI_Bcast(&maxANonzeros, 1, MPI_INT, 0, myGroup);
+    MPI_Bcast(&n, 1, MPI_INT, 0, myGroup);
+    MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
 }

@@ -17,9 +17,9 @@ class BlockedColumnA : public MatmulAlgorithm {
 public:
     void columnAAlgorithm(int argc, char **argv);
 
-    void replicateAPencils(CSCMatrix &localAPencil);
-
     void createMPICommunicators();
+
+    void calcGroups();
 
     void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result);
 
