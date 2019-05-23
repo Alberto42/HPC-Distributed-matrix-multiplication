@@ -11,13 +11,17 @@ public:
 
     int myProcessRank;
     int numProcesses;
-    int numberOfGroups;
+    int numberOfBlocks;
     int n, nBeforeExtending;
+    int maxANonzeros;
+    MPI_Comm myGroup;
     void init(int argc, char **argv);
 
     void calcGroups();
 
     void extendA(CSCMatrix *fullMatrixA, int numProcesses);
+
+    void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localA);
 };
 
 

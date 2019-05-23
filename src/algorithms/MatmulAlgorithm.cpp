@@ -7,6 +7,7 @@
 #include <src/parseInput.h>
 #include <assert.h>
 #include <src/matrices/CSCMatrix.h>
+#include <src/const.h>
 #include "MatmulAlgorithm.h"
 
 
@@ -19,7 +20,7 @@ void MatmulAlgorithm::init(int argc, char **argv) {
 
 void MatmulAlgorithm::calcGroups() {
     assert(numProcesses % spec.c == 0);
-    numberOfGroups = numProcesses / spec.c;
+    numberOfBlocks = numProcesses / spec.c;
 }
 
 void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
@@ -40,5 +41,26 @@ void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
         }
         delete[] fullMatrixA->extents;
         fullMatrixA->extents = newExtents;
+    }
+}
+
+void MatmulAlgorithm::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localA) {
+    vector<CSCMatrix> blocks;
+    if (myProcessRank == 0) {
+        blocks = fullMatrixA.split(numberOfBlocks);
+        localA = blocks[0];
+        maxANonzeros = fullMatrixA.count;
+        for (int i = 1; i < numberOfBlocks; i++) {
+            blocks[i].sendSync(i, INITIAL_SCATTER_TAG);
+            MPI_Send(&fullMatrixA.count, 1, MPI_INT, i, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD);
+            MPI_Send(&n, 1, MPI_INT, i, SEND_N_TAG, MPI_COMM_WORLD);
+            MPI_Send(&nBeforeExtending, 1, MPI_INT, i, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD);
+        }
+    } else if (myProcessRank < numberOfBlocks) {
+        localA.receiveSync(0, INITIAL_SCATTER_TAG);
+        MPI_Status status;
+        MPI_Recv(&maxANonzeros, 1, MPI_INT, 0, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&n, 1, MPI_INT, 0, SEND_N_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&nBeforeExtending, 1, MPI_INT, 0, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD, &status);
     }
 }

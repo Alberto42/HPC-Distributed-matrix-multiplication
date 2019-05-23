@@ -14,13 +14,8 @@ using namespace std;
 
 
 class BlockedColumnA : public MatmulAlgorithm {
-
-    int maxANonzeros;
-    MPI_Comm myGroup;
 public:
     void columnAAlgorithm(int argc, char **argv);
-
-    void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil);
 
     void replicateAPencils(CSCMatrix &localAPencil);
 

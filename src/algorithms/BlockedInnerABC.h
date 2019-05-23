@@ -13,6 +13,8 @@ public:
     void innerABCAlgorithm(int argc,char **argv);
 
     void createMPICommunicators();
+
+    void replicateAPencils(CSCMatrix &localAPencil);
 };
 
 

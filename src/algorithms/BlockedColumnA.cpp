@@ -20,30 +20,9 @@
 
 using namespace std;
 
-void BlockedColumnA::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localAPencil) {
-    vector<CSCMatrix> pencils;
-    if (myProcessRank == 0) {
-        pencils = fullMatrixA.split(numberOfGroups);
-        localAPencil = pencils[0];
-        maxANonzeros = fullMatrixA.count;
-        for (int i = 1; i < numberOfGroups; i++) {
-            pencils[i].sendSync(i, INITIAL_SCATTER_TAG);
-            MPI_Send(&fullMatrixA.count, 1, MPI_INT, i, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD);
-            MPI_Send(&n, 1, MPI_INT, i, SEND_N_TAG, MPI_COMM_WORLD);
-            MPI_Send(&nBeforeExtending, 1, MPI_INT, i, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD);
-        }
-    } else if (myProcessRank < numberOfGroups) {
-        localAPencil.receiveSync(0, INITIAL_SCATTER_TAG);
-        MPI_Status status;
-        MPI_Recv(&maxANonzeros, 1, MPI_INT, 0, SEND_A_NONZEROS_TAG, MPI_COMM_WORLD, &status);
-        MPI_Recv(&n, 1, MPI_INT, 0, SEND_N_TAG, MPI_COMM_WORLD, &status);
-        MPI_Recv(&nBeforeExtending, 1, MPI_INT, 0, SEND_N_BEFORE_EXTENDING_TAG, MPI_COMM_WORLD, &status);
-    }
-}
-
 void BlockedColumnA::replicateAPencils(CSCMatrix &localAPencil) {
     MPI_Bcast((void *) &localAPencil, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
-    if (myProcessRank >= numberOfGroups) {
+    if (myProcessRank >= numberOfBlocks) {
         localAPencil.nonzeros = new double[localAPencil.count];
         localAPencil.extents = new int[localAPencil.m + 1];
         localAPencil.indices = new int[localAPencil.count];
@@ -58,7 +37,7 @@ void BlockedColumnA::replicateAPencils(CSCMatrix &localAPencil) {
 }
 
 void BlockedColumnA::createMPICommunicators() {
-    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfGroups, myProcessRank, &myGroup);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &myGroup);
 }
 
 void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
@@ -224,10 +203,10 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
-        for (int i = 0; i < numberOfGroups; i++) {
+        for (int i = 0; i < numberOfBlocks; i++) {
             log("sparseTimesDense");
             sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
-            if (i == numberOfGroups - 1 && j == spec.exponent - 1)
+            if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
                 break;
             log("shift");
             shift(localAPencil, localAPencilTmp);
