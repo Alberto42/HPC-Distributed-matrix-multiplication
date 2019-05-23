@@ -6,7 +6,9 @@
 #define AC370756_BLOCKEDINNERABC_H
 
 
-class BlockedInnerABC {
+#include "MatmulAlgorithm.h"
+
+class BlockedInnerABC : public MatmulAlgorithm{
 public:
     void innerABCAlgorithm(int argc,char **argv);
 };

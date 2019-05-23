@@ -7,7 +7,11 @@
 
 
 class MatmulAlgorithm {
+public:
 
+    int myProcessRank;
+    int numProcesses;
+    void init(int argc, char **argv);
 };
 
 

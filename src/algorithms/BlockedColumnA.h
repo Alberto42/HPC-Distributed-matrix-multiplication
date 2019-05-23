@@ -8,13 +8,12 @@
 #include <mpi.h>
 #include <src/matrices/CSCMatrix.h>
 #include <src/matrices/DenseMatrix.h>
+#include "MatmulAlgorithm.h"
 
 using namespace std;
 
 
-class BlockedColumnA {
-    int myProcessRank;
-    int numProcesses;
+class BlockedColumnA : public MatmulAlgorithm {
     int groupId, numberOfGroups, processesPerGroup, sizeOfGroup;
     int n, nBeforeExtending;
     int maxANonzeros;
