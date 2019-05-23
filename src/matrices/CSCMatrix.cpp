@@ -18,9 +18,9 @@
 using namespace std;
 
 
-vector<CSCMatrix> CSCMatrix::split(int pencilsCount) {
-    assert(m % pencilsCount == 0);
-    int columnsInPeace = m / pencilsCount;
+vector<CSCMatrix> CSCMatrix::split(int peacesCount) {
+    assert(m % peacesCount == 0);
+    int columnsInPeace = m / peacesCount;
     vector<CSCMatrix> result;
     for (int colRangeBegin = 0; colRangeBegin < m; colRangeBegin += columnsInPeace) {
         int colRangeEnd = colRangeBegin + columnsInPeace;

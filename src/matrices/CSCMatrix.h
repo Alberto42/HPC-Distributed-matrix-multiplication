@@ -15,7 +15,7 @@ using namespace std;
 class CSCMatrix{
 public:
 
-    vector<CSCMatrix> split(int pencilsCount);
+    vector<CSCMatrix> split(int peacesCount);
 
     friend ostream &operator<<(ostream &os, const CSCMatrix &matrix);
 

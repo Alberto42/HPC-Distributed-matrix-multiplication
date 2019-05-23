@@ -7,10 +7,39 @@
 
 
 #include <cstddef>
+#include <vector>
+#include <fstream>
+#include <assert.h>
+#include <mpi.h>
+#include <ostream>
 
-class CSRMatrix {
-    size_t getSize();
+using namespace std;
+class CSRMatrix{
+public:
+
+    vector<CSRMatrix> split(int peacesCount);
+
+//    friend ostream &operator<<(ostream &os, const CSRMatrix &matrix);
+    friend ostream &operator<<(ostream &os, const CSRMatrix &matrix);
+
+    CSRMatrix();
+
+    CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
+              int shiftHorizontal, int shiftVertical);
+
+
+    double *nonzeros;
+    int *extents, *indices;
+    int n, m, count, maxNonzeroInRow, offset, shiftHorizontal, shiftVertical;
+
+    void sendSync(int dest, const int *tags);
+
+    void sendAsync(int dest, const int *tags, MPI_Request *req);
+
+    void receiveSync(int src, const int *tags);
 };
+
+CSRMatrix operator>>(istream &stream, CSRMatrix &matrix);
 
 
 #endif //AC370756_CSRMATRIX_H
