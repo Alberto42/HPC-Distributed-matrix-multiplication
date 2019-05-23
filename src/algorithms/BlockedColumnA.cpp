@@ -186,9 +186,9 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     replicateA(*localAPencil);
 
     const int pencilBCWidth = n / numProcesses;
-    const int BCOffset = myProcessRank * pencilBCWidth;
+    const int BCShift = myProcessRank * pencilBCWidth;
     localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
-    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCOffset, 0);
+    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCShift, 0);
 
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {

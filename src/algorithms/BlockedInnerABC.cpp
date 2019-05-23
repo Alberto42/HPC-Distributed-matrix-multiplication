@@ -39,8 +39,10 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     log("replicateA");
     replicateA(localA);
 
-    const int pencilBCWidth = n / numberOfBlocks;
-    const int BCOffset = (myProcessRank % numberOfBlocks) * pencilBCWidth;
+    const int blockCWidth = n / numberOfBlocks;
+    const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
+
+    localCBlock = makeDenseMatrix(blockCWidth, blockCWidth,n,CShiftHorizontal, myRowBlock*blockCWidth);
 
 
 }
@@ -48,10 +50,11 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 void BlockedInnerABC::calcGroups() {
     assert(numProcesses % (spec.c * spec.c) == 0);
     numberOfBlocks = numProcesses / spec.c;
+    myRowBlock = (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c);
 }
 
 void BlockedInnerABC::createMPICommunicators() {
-    int color = (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c);
+    int color = myRowBlock;
     MPI_Comm_split(MPI_COMM_WORLD, color, myProcessRank, &myGroup);
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &groupDenseReplicate);
 
