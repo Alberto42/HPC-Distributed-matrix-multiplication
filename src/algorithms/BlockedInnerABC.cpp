@@ -29,10 +29,18 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         n = fullMatrixA.n;
     }
     scatterAAmongGroups(fullMatrixA, localA);
+    if (myProcessRank < numberOfBlocks) {
+        localBPencil = makeDenseMatrix(myProcessRank, numberOfBlocks, n, spec.seed, nBeforeExtending);
+    }
+
+    log("replicateB");
+    MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
 
     log("replicateA");
     replicateA(localA);
 
+    const int pencilBCWidth = n / numberOfBlocks;
+    const int BCOffset = (myProcessRank % numberOfBlocks) * pencilBCWidth;
 
 
 }
@@ -45,6 +53,7 @@ void BlockedInnerABC::calcGroups() {
 void BlockedInnerABC::createMPICommunicators() {
     int color = (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c);
     MPI_Comm_split(MPI_COMM_WORLD, color, myProcessRank, &myGroup);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &groupDenseReplicate);
 
 }
 

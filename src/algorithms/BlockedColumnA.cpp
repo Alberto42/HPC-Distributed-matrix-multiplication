@@ -34,8 +34,8 @@ void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseM
             int rowA = A.indices[j];
             double valueA = A.nonzeros[j];
             int rowB = colA;
-            int colBBegin = B.shift;
-            int colBEnd = B.shift + B.m;
+            int colBBegin = B.shiftHorizontal;
+            int colBEnd = B.shiftHorizontal + B.m;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
                 double valueB = B.get(rowB, colB - colBBegin);
@@ -101,7 +101,7 @@ DenseMatrix *BlockedColumnA::gatherResultVerbose(DenseMatrix *localCPencil) {
 int BlockedColumnA::gatherResultGreater(DenseMatrix *localCPencil) {
     int localGreaterCount = 0;
     for (int row = 0; row < nBeforeExtending; row++) {
-        for (int col = 0; localCPencil->shift + col < nBeforeExtending && col < localCPencil->m; col++) {
+        for (int col = 0; localCPencil->shiftHorizontal + col < nBeforeExtending && col < localCPencil->m; col++) {
             localGreaterCount += (localCPencil->get(row, col) >= spec.g);
         }
     }
@@ -188,7 +188,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     const int pencilBCWidth = n / numProcesses;
     const int BCOffset = myProcessRank * pencilBCWidth;
     localBPencil = makeDenseMatrix(myProcessRank, numProcesses, n, spec.seed, nBeforeExtending);
-    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCOffset);
+    localCPencil = makeDenseMatrix(n, pencilBCWidth, BCOffset, 0);
 
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {

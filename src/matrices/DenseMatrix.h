@@ -10,7 +10,7 @@
 
 class DenseMatrix {
 public:
-    int n, m, shift;
+    int n, m, shiftHorizontal, shiftVertical;
     double matrix[0];
 
     DenseMatrix();
@@ -28,7 +28,7 @@ public:
 
 DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed, int nBeforeExtending);
 
-DenseMatrix *makeDenseMatrix(int n, int m, int shift);
+DenseMatrix *makeDenseMatrix(int n, int m, int shiftHorizontal, int shiftVertical);
 
 DenseMatrix *getIthMatrix(DenseMatrix* first,int i);
 

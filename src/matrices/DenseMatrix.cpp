@@ -27,7 +27,7 @@ size_t DenseMatrix::size() {
 }
 
 ostream &operator<<(ostream &os, DenseMatrix &matrix) {
-    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shift << endl;
+    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shiftHorizontal << endl;
 
     for(int row=0;row<matrix.n;row++) {
         for(int col=0;col<matrix.m;col++) {
@@ -47,7 +47,7 @@ DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed
 
     d->n = n;
     d->m = columnsInPeace;
-    d->shift = colRangeBegin;
+    d->shiftHorizontal = colRangeBegin;
 
     for (int row = 0; row < n; row++) {
         for (int col = colRangeBegin; col < colRangeEnd; col++) {
@@ -60,11 +60,12 @@ DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed
     return d;
 }
 
-DenseMatrix *makeDenseMatrix(int n, int m, int shift) {
+DenseMatrix *makeDenseMatrix(int n, int m, int shiftHorizontal, int shiftVertical) {
     DenseMatrix *d = (DenseMatrix *) malloc(sizeof(DenseMatrix) + n * m * sizeof(double));
     d->n = n;
     d->m = m;
-    d->shift = shift;
+    d->shiftHorizontal = shiftHorizontal;
+    d->shiftVertical = shiftVertical;
     for (int i = 0; i < n * m; i++)
         d->matrix[i] = 0;
     return d;

@@ -10,6 +10,7 @@
 
 class BlockedInnerABC : public MatmulAlgorithm{
 public:
+    MPI_Comm groupDenseReplicate;
     void innerABCAlgorithm(int argc,char **argv);
 
     void createMPICommunicators();
