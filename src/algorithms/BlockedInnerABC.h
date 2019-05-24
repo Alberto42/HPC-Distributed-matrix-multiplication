@@ -7,6 +7,7 @@
 
 
 #include "MatmulAlgorithm.h"
+#include "../matrices/CSRMatrix.h"
 
 class BlockedInnerABC : public MatmulAlgorithm{
 public:
@@ -17,6 +18,8 @@ public:
     void createMPICommunicators();
 
     void calcGroups();
+
+    void sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, DenseMatrix &result);
 };
 
 

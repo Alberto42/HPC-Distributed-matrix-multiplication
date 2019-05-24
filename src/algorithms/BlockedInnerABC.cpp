@@ -61,4 +61,25 @@ void BlockedInnerABC::createMPICommunicators() {
 
 }
 
+void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseMatrix &result) {
+    for (int i = 1; i < A.m + 1; i++) {
+        int extentBegin = A.extents[i - 1] - A.offset;
+        int extentEnd = A.extents[i] - A.offset;
+        int colA = i - 1 + A.shift;
+
+        for (int j = extentBegin; j < extentEnd; j++) {
+            int rowA = A.indices[j];
+            double valueA = A.nonzeros[j];
+            int rowB = colA;
+            int colBBegin = B.shiftHorizontal;
+            int colBEnd = B.shiftHorizontal + B.m;
+
+            for (int colB = colBBegin; colB < colBEnd; colB++) {
+                double valueB = B.get(rowB, colB - colBBegin);
+                result.add(rowA, colB - colBBegin, valueA * valueB);
+            }
+        }
+    }
+}
+
 

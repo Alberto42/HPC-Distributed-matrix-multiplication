@@ -63,9 +63,7 @@ CSRMatrix operator>>(istream &stream, CSRMatrix &matrix) {
 CSRMatrix::CSRMatrix() { offset = 0; }
 
 CSRMatrix::CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
-                     int offset, int shiftVertical)
-        : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
-          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shiftVertical(shiftVertical) {}
+                     int offset, int shift) : CSCMatrix(nonzeros, extents, indices, n, m , count, maxNonzeroInRow, offset, shift){}
 
 void CSRMatrix::sendSync(int dest, const int *tags) {
     size_t size = sizeof(CSRMatrix);
@@ -102,7 +100,7 @@ ostream &operator<<(ostream &os, const CSRMatrix &matrix) {
     os << "nonzeros: " << matrix.nonzeros << " extents: " << matrix.extents << " indices: " << matrix.indices << " n: "
        << matrix.n << " m: " << matrix.m << " count: " << matrix.count << " maxNonzeroInRow: " << matrix.maxNonzeroInRow
        << " offset: " << matrix.offset <<  " shiftVertical: "
-       << matrix.shiftVertical;
+       << matrix.shift;
     printArray<double>(matrix.nonzeros, matrix.count, os);
     printArray<int>(matrix.extents, matrix.m + 1, os);
     printArray<int>(matrix.indices, matrix.count, os);

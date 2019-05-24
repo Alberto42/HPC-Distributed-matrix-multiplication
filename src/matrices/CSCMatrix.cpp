@@ -106,7 +106,7 @@ CSCMatrix::CSCMatrix() { offset = 0; }
 CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
                            int offset, int shiftHorizontal)
         : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
-          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shiftHorizontal(shiftHorizontal) {}
+          maxNonzeroInRow(maxNonzeroInRow), offset(offset), shift(shiftHorizontal) {}
 
 void CSCMatrix::sendSync(int dest, const int *tags) {
     size_t size = sizeof(CSCMatrix);

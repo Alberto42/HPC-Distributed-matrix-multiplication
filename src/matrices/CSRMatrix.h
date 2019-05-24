@@ -25,12 +25,12 @@ public:
     CSRMatrix();
 
     CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
-            int shiftVertical);
+            int shift);
 
 
-    double *nonzeros;
-    int *extents, *indices;
-    int n, m, count, maxNonzeroInRow, offset, shiftVertical;
+//    double *nonzeros;
+//    int *extents, *indices;
+//    int n, m, count, maxNonzeroInRow, offset, shiftVertical;
 
     void sendSync(int dest, const int *tags);
 

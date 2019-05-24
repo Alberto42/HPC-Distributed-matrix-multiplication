@@ -26,7 +26,7 @@ public:
 
     double *nonzeros;
     int *extents, *indices;
-    int n, m, count, maxNonzeroInRow, offset, shiftHorizontal;
+    int n, m, count, maxNonzeroInRow, offset, shift;
 
     void sendSync(int dest, const int *tags);
 
