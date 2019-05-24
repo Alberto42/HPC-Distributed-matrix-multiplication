@@ -40,9 +40,10 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     replicateA(localA);
 
     const int blockCWidth = n / numberOfBlocks;
+    const int blockCLength = blockCWidth * (numberOfBlocks/spec.c);
     const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
 
-    localCBlock = makeDenseMatrix(blockCWidth, blockCWidth,n,CShiftHorizontal, myRowBlock*blockCWidth);
+    localCBlock = makeDenseMatrix(blockCWidth, blockCLength,CShiftHorizontal, myRowBlock*blockCWidth);
 
 
 }
