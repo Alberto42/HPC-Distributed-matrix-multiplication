@@ -25,11 +25,11 @@ public:
 
     void shift(CSRMatrix *&localA, CSRMatrix *&localATmp, MPI_Comm comm);
 
-    DenseMatrix * gatherResultVerbose(DenseMatrix *localCBlock);
+    DenseMatrix * gatherResultVerbose(DenseMatrix *localCPencil);
 
     void printResult(DenseMatrix *fullC);
 
-    void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCBlock);
+    void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil);
 };
 
 

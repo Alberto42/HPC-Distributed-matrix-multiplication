@@ -15,7 +15,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 
     localA = new CSRMatrix();
     localATmp = new CSRMatrix();
-    DenseMatrix *localBPencil, *localCBlock, *fullMatrixC;
+    DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
     int greaterCount;
 
     init(argc, argv);
@@ -44,31 +44,31 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     replicateA(*localA);
 
     const int blockCWidth = n / numberOfBlocks;
-    const int blockCLength = blockCWidth * (numberOfBlocks/spec.c);
     const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
 
-    localCBlock = makeDenseMatrix(blockCLength, blockCWidth, CShiftHorizontal, myRowBlock*blockCLength);
+    localCPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
 
     log("localA");
     log(*localA);
     log("*localBPencil");
     log(*localBPencil);
-    log("localCBlock");
-    log(*localCBlock);
+    log("localCPencil");
+    log(*localCPencil);
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
         for (int i = 0; i < numberOfBlocks/spec.c; i++) {
             log("sparseTimesDense");
-            sparseTimesDense(*localA, *localBPencil, *localCBlock);
+            sparseTimesDense(*localA, *localBPencil, *localCPencil);
             if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
                 break;
             log("shift");
             shift(localA, localATmp, groupShift);
+            log("after shift");
         }
         if (j != spec.exponent - 1)
-            assignCMatrixToBMatrix(localBPencil, localCBlock);
+            assignCMatrixToBMatrix(localBPencil, localCPencil);
     }
-    fullMatrixC=gatherResultVerbose(localCBlock);
+    fullMatrixC=gatherResultVerbose(localCPencil);
 
     log("printResult");
     if (spec.verbose) {
@@ -110,11 +110,10 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseM
             int rowB = colA;
             int colBBegin = B.shiftHorizontal;
             int colBEnd = B.shiftHorizontal + B.m;
-            int rowABegin = B.shiftVertical;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
                 double valueB = B.get(rowB, colB - colBBegin);
-                result.add(rowA - rowABegin, colB - colBBegin, valueA * valueB);
+                result.add(rowA, colB - colBBegin, valueA * valueB);
             }
         }
     }
@@ -154,16 +153,16 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm c
     delete[] localATmp->indices;
 }
 
-DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCBlock) {
+DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {
     MPI_Datatype dtLocalCBlock;
-    const size_t localCSize = sizeof(DenseMatrix) + localCBlock->n * localCBlock->m * sizeof(double);
+    const size_t localCSize = sizeof(DenseMatrix) + localCPencil->n * localCPencil->m * sizeof(double);
     MPI_Type_contiguous(localCSize, MPI_BYTE, &dtLocalCBlock);
     MPI_Type_commit(&dtLocalCBlock);
     DenseMatrix *receiverCMatrices = nullptr;
     if (myProcessRank == 0) {
         receiverCMatrices = (DenseMatrix*) malloc(numProcesses * localCSize);
     }
-    MPI_Gather((void *)localCBlock, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, 0, MPI_COMM_WORLD);
+    MPI_Gather((void *)localCPencil, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, 0, MPI_COMM_WORLD);
 
     DenseMatrix *fullC = nullptr;
     if (myProcessRank == 0) {
@@ -174,7 +173,7 @@ DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCBlock) {
                 for (int localCol = 0; localCol < m->m; localCol++) {
                     int row = localRow + m->shiftVertical;
                     int col = localCol + m->shiftHorizontal;
-                    fullC->set(row,col, m->get(localRow, localCol));
+                    fullC->add(row,col, m->get(localRow, localCol));
                 }
             }
         }
@@ -196,12 +195,11 @@ void BlockedInnerABC::printResult(DenseMatrix *fullC) {
     }
 }
 
-void BlockedInnerABC::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCBlock) {
-    assert(localBPencil->m == localCBlock->m);
-    assert(localCBlock->n == localCBlock->m);
-    memcpy(localBPencil->matrix + localCBlock->shiftVertical * localBPencil->m, localCBlock->matrix, localCBlock->n * localCBlock->n * sizeof(double));
-    for (int i = 0; i < localCBlock->n * localCBlock->m; i++)
-        localCBlock->matrix[i] = 0;
+void BlockedInnerABC::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
+    assert(localBPencil->size() == localCPencil->size());
+    memcpy(localBPencil, localCPencil, localBPencil->size());
+    for (int i = 0; i < localCPencil->n * localCPencil->m; i++)
+        localCPencil->matrix[i] = 0;
 
 }
 
