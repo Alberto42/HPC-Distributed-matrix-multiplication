@@ -30,7 +30,7 @@ DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed
 
 DenseMatrix *makeDenseMatrix(int n, int m, int shiftHorizontal, int shiftVertical);
 
-DenseMatrix *getIthMatrix(DenseMatrix* first,int i);
+DenseMatrix *getIthMatrix(DenseMatrix *first, int i);
 
 
 #endif //AC370756_DENSEMATRIX_H

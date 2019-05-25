@@ -104,7 +104,7 @@ CSCMatrix operator>>(istream &stream, CSCMatrix &matrix) {
 CSCMatrix::CSCMatrix() { offset = 0; }
 
 CSCMatrix::CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow,
-                           int offset, int shiftHorizontal)
+                     int offset, int shiftHorizontal)
         : nonzeros(nonzeros), extents(extents), indices(indices), n(n), m(m), count(count),
           maxNonzeroInRow(maxNonzeroInRow), offset(offset), shift(shiftHorizontal) {}
 

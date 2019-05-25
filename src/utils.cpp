@@ -41,6 +41,6 @@ void initLogger(int myProcessNo) {
     utils::logger = new Logger(myProcessNo);
 }
 
-ofstream& stream() {
+ofstream &stream() {
     return utils::logger->stream();
 }

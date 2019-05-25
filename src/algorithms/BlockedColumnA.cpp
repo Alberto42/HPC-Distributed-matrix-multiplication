@@ -90,7 +90,6 @@ void BlockedColumnA::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatr
 }
 
 
-
 void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     CSCMatrix fullMatrixA, *localAPencil, *localAPencilTmp;

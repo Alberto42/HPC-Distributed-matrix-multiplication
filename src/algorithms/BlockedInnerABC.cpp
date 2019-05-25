@@ -10,7 +10,7 @@
 #include "BlockedInnerABC.h"
 #include "MatmulAlgorithm.h"
 
-void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
+void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     CSRMatrix fullMatrixA, *localA, *localATmp;
     DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
     int greaterCount;
@@ -47,7 +47,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 
     log("replicateB");
     if (myProcessRank >= numberOfBlocks) {
-        localBPencil = makeDenseMatrix(n,blockCWidth, CShiftHorizontal, 0);
+        localBPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
     }
     MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
 
@@ -55,9 +55,9 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
-        for (int i = 0; i < numberOfBlocks/spec.c; i++) {
+        for (int i = 0; i < numberOfBlocks / spec.c; i++) {
             sparseTimesDense(*localA, *localBPencil, *localCPencil);
-            if (i == numberOfBlocks/spec.c - 1 && j == spec.exponent - 1)
+            if (i == numberOfBlocks / spec.c - 1 && j == spec.exponent - 1)
                 break;
             shift(localA, localATmp, groupShift);
         }
@@ -66,7 +66,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     }
 
     if (spec.verbose) {
-        fullMatrixC=gatherResultVerbose(localCPencil);
+        fullMatrixC = gatherResultVerbose(localCPencil);
     } else {
         gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
         greaterCount = gatherResultGreater(localBPencil) / spec.c;
@@ -90,7 +90,8 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 void BlockedInnerABC::calcGroups() {
     assert(numProcesses % (spec.c * spec.c) == 0);
     numberOfBlocks = numProcesses / spec.c;
-    myRowBlock = ( (myProcessRank / numberOfBlocks)*(numberOfBlocks/spec.c) + (myProcessRank % numberOfBlocks) ) % numberOfBlocks;
+    myRowBlock = ((myProcessRank / numberOfBlocks) * (numberOfBlocks / spec.c) + (myProcessRank % numberOfBlocks)) %
+                 numberOfBlocks;
 }
 
 void BlockedInnerABC::createMPICommunicators() {
@@ -102,7 +103,7 @@ void BlockedInnerABC::createMPICommunicators() {
 
 }
 
-void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseMatrix &result) {
+void BlockedInnerABC::sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, DenseMatrix &result) {
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
@@ -123,7 +124,7 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseM
     }
 }
 
-void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm comm) {
+void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp, MPI_Comm comm) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
@@ -131,7 +132,6 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm c
     int src = (groupShiftRank - 1 + numberOfBlocks) % numberOfBlocks;
 
     localA->CSCMatrix::sendAsync(dest, SHIFT_TAGS, requests, comm);
-
 
 
     MPI_Irecv((void *) localATmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
@@ -160,7 +160,8 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm c
     delete[] localATmp->indices;
 }
 
-void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *localBPencil ,DenseMatrix *localCPencil, MPI_Comm comm) {
+void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *localBPencil, DenseMatrix *localCPencil,
+                                                               MPI_Comm comm) {
     assert(localBPencil->n == localCPencil->n);
     assert(localBPencil->m == localCPencil->m);
     MPI_Datatype dtLocalCBlock;
@@ -172,25 +173,25 @@ void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *loca
     int numProcessesInGroup;
     MPI_Comm_size(comm, &numProcessesInGroup);
 
-    receiverCMatrices = (DenseMatrix*) malloc(numProcessesInGroup * localCSize);
+    receiverCMatrices = (DenseMatrix *) malloc(numProcessesInGroup * localCSize);
 
-    MPI_Allgather((void *)localCPencil, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, comm);
+    MPI_Allgather((void *) localCPencil, 1, dtLocalCBlock, receiverCMatrices, 1, dtLocalCBlock, comm);
 
-    for(int i=0;i<localCPencil->n;i++) {}
+    for (int i = 0; i < localCPencil->n; i++) {}
     for (int i = 0; i < numProcessesInGroup; i++) {
         DenseMatrix *m = getIthMatrix(receiverCMatrices, i);
         for (int localRow = 0; localRow < m->n; localRow++) {
             for (int localCol = 0; localCol < m->m; localCol++) {
                 if (i == 0)
-                    localBPencil->set(localRow,localCol,0);
-                localBPencil->add(localRow,localCol, m->get(localRow, localCol));
+                    localBPencil->set(localRow, localCol, 0);
+                localBPencil->add(localRow, localCol, m->get(localRow, localCol));
             }
         }
     }
 
     for (int row = 0; row < localCPencil->n; row++) {
         for (int col = 0; col < localCPencil->m; col++) {
-            localCPencil->set(row,col,0);
+            localCPencil->set(row, col, 0);
         }
     }
 
@@ -198,16 +199,16 @@ void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *loca
 
 }
 
-DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {
+DenseMatrix *BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {
     MPI_Datatype dtLocalCBlock;
     const size_t localCSize = sizeof(DenseMatrix) + localCPencil->n * localCPencil->m * sizeof(double);
     MPI_Type_contiguous(localCSize, MPI_BYTE, &dtLocalCBlock);
     MPI_Type_commit(&dtLocalCBlock);
     DenseMatrix *receiverCMatrices = nullptr;
     if (myProcessRank == 0) {
-        receiverCMatrices = (DenseMatrix*) malloc(numProcesses * localCSize);
+        receiverCMatrices = (DenseMatrix *) malloc(numProcesses * localCSize);
     }
-    MPI_Gather((void *)localCPencil, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, 0, MPI_COMM_WORLD);
+    MPI_Gather((void *) localCPencil, 1, dtLocalCBlock, receiverCMatrices, 1, dtLocalCBlock, 0, MPI_COMM_WORLD);
 
     DenseMatrix *fullC = nullptr;
     if (myProcessRank == 0) {
@@ -218,7 +219,7 @@ DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {
                 for (int localCol = 0; localCol < m->m; localCol++) {
                     int row = localRow + m->shiftVertical;
                     int col = localCol + m->shiftHorizontal;
-                    fullC->add(row,col, m->get(localRow, localCol));
+                    fullC->add(row, col, m->get(localRow, localCol));
                 }
             }
         }
@@ -231,7 +232,7 @@ void BlockedInnerABC::printResult(DenseMatrix *fullC) {
         cout << nBeforeExtending << " " << nBeforeExtending << endl;
 
         for (int row = 0; row < nBeforeExtending; row++) {
-            for(int col = 0; col < nBeforeExtending; col++) {
+            for (int col = 0; col < nBeforeExtending; col++) {
                 cout.precision(5);
                 cout << "   " << fixed << fullC->get(row, col) << " ";
             }

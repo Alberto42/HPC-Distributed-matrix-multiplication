@@ -12,7 +12,7 @@
 
 using namespace std;
 
-class CSCMatrix{
+class CSCMatrix {
 public:
 
     vector<CSCMatrix> split(int peacesCount);
@@ -22,7 +22,7 @@ public:
     CSCMatrix();
 
     CSCMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
-                 int shiftHorizontal);
+              int shiftHorizontal);
 
     double *nonzeros;
     int *extents, *indices;

@@ -15,6 +15,7 @@
 #include "CSCMatrix.h"
 
 using namespace std;
+
 class CSRMatrix : public CSCMatrix {
 public:
 
@@ -25,7 +26,7 @@ public:
     CSRMatrix();
 
     CSRMatrix(double *nonzeros, int *extents, int *indices, int n, int m, int count, int maxNonzeroInRow, int offset,
-            int shift);
+              int shift);
 
 
 //    double *nonzeros;

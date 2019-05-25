@@ -15,6 +15,7 @@ public:
     int n, nBeforeExtending;
     int maxANonzeros;
     MPI_Comm myGroup;
+
     void init(int argc, char **argv);
 
     void extendA(CSCMatrix *fullMatrixA, int numProcesses);

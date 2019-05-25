@@ -30,11 +30,10 @@ double generate_double(int seed, int row, int col) {
     if (seed == 1)
         return 1;
     if (seed == 2)
-        return (row==col)? 1:0;
+        return (row == col) ? 1 : 0;
     if (seed == 3)
-        return row*10+col;
-    if (seed > 10)
-    {
+        return row * 10 + col;
+    if (seed > 10) {
 
         uint32_t rand_32 = naive_xorshift((uint32_t) seed, (uint32_t) row,
                                           (uint32_t) col);

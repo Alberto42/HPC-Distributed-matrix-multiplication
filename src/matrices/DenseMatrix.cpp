@@ -30,11 +30,12 @@ size_t DenseMatrix::size() {
 }
 
 ostream &operator<<(ostream &os, DenseMatrix &matrix) {
-    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shiftHorizontal << " " << matrix.shiftVertical << endl;
+    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shiftHorizontal << " " << matrix.shiftVertical
+       << endl;
 
-    for(int row=0;row<matrix.n;row++) {
-        for(int col=0;col<matrix.m;col++) {
-            os << matrix.get(row,col) << " ";
+    for (int row = 0; row < matrix.n; row++) {
+        for (int col = 0; col < matrix.m; col++) {
+            os << matrix.get(row, col) << " ";
         }
         os << endl;
     }
@@ -75,7 +76,7 @@ DenseMatrix *makeDenseMatrix(int n, int m, int shiftHorizontal, int shiftVertica
     return d;
 }
 
-DenseMatrix *getIthMatrix(DenseMatrix* first,int i) {
+DenseMatrix *getIthMatrix(DenseMatrix *first, int i) {
     size_t len = first->size();
-    return (DenseMatrix*)( (char*)first + len*i );
+    return (DenseMatrix *) ((char *) first + len * i);
 }

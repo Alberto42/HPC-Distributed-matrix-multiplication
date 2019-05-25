@@ -77,7 +77,7 @@ void MatmulAlgorithm::replicateA(CSCMatrix &localA) {
     MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
 }
 
-void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp,MPI_Comm comm) {
+void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp, MPI_Comm comm) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
