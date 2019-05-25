@@ -12,6 +12,9 @@
 
 void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     CSRMatrix fullMatrixA, *localA, *localATmp;
+
+    localA = new CSRMatrix();
+    localATmp = new CSRMatrix();
     DenseMatrix *localBPencil, *localCBlock, *fullMatrixC;
     int greaterCount;
 
@@ -109,38 +112,38 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseM
     }
 }
 
-void BlockedInnerABC::shift(CSRMatrix *&localAPencil, CSRMatrix *&localAPencilTmp,MPI_Comm comm) {
+void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm comm) {
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
-    localAPencil->CSCMatrix::sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests, comm);
+    localA->CSCMatrix::sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests, comm);
 
     int src = (myProcessRank - 1 + numProcesses) % numProcesses;
 
-    MPI_Irecv((void *) localAPencilTmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
+    MPI_Irecv((void *) localATmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
 
     double *nonzeros = new double[maxANonzeros];
-    int *extents = new int[localAPencil->m + 1];
+    int *extents = new int[localA->m + 1];
     int *indices = new int[maxANonzeros];
 
     MPI_Irecv(nonzeros, maxANonzeros, MPI_DOUBLE, src, SHIFT_TAGS[1],
               comm, requests + 5);
-    MPI_Irecv(extents, localAPencil->m + 1, MPI_INT, src, SHIFT_TAGS[2], comm,
+    MPI_Irecv(extents, localA->m + 1, MPI_INT, src, SHIFT_TAGS[2], comm,
               requests + 6);
     MPI_Irecv(indices, maxANonzeros, MPI_INT, src, SHIFT_TAGS[3], comm,
               requests + 7);
 
     MPI_Waitall(8, requests, statuses);
 
-    localAPencilTmp->nonzeros = nonzeros;
-    localAPencilTmp->extents = extents;
-    localAPencilTmp->indices = indices;
+    localATmp->nonzeros = nonzeros;
+    localATmp->extents = extents;
+    localATmp->indices = indices;
 
-    swap(localAPencil, localAPencilTmp);
+    swap(localA, localATmp);
 
-    delete[] localAPencilTmp->nonzeros;
-    delete[] localAPencilTmp->extents;
-    delete[] localAPencilTmp->indices;
+    delete[] localATmp->nonzeros;
+    delete[] localATmp->extents;
+    delete[] localATmp->indices;
 }
 
 DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCBlock) {

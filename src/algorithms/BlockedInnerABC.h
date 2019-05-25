@@ -23,7 +23,7 @@ public:
 
     void sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, DenseMatrix &result);
 
-    void shift(CSRMatrix *&localAPencil, CSRMatrix *&localAPencilTmp, MPI_Comm comm);
+    void shift(CSRMatrix *&localA, CSRMatrix *&localATmp, MPI_Comm comm);
 
     DenseMatrix * gatherResultVerbose(DenseMatrix *localCBlock);
 
