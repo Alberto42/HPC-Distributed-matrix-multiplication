@@ -63,7 +63,6 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
                 break;
             log("shift");
             shift(localA, localATmp, groupShift);
-            log("after shift");
         }
         if (j != spec.exponent - 1)
             assignCMatrixToBMatrix(localBPencil, localCPencil);
@@ -93,7 +92,7 @@ void BlockedInnerABC::createMPICommunicators() {
     int color = myRowBlock;
     MPI_Comm_split(MPI_COMM_WORLD, color, myProcessRank, &myGroup);
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &groupDenseReplicate);
-    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank / spec.c, myProcessRank, &groupShift);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank / numberOfBlocks, myProcessRank, &groupShift);
     MPI_Comm_rank(groupShift, &groupShiftRank);
 
 }
@@ -123,9 +122,12 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm c
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
-    localA->CSCMatrix::sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests, comm);
+    int dest = (groupShiftRank + 1) % numberOfBlocks;
+    int src = (groupShiftRank - 1 + numberOfBlocks) % numberOfBlocks;
 
-    int src = (myProcessRank - 1 + numProcesses) % numProcesses;
+    localA->CSCMatrix::sendAsync(dest, SHIFT_TAGS, requests, comm);
+
+
 
     MPI_Irecv((void *) localATmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
 
