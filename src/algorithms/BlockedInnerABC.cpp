@@ -6,12 +6,13 @@
 #include <src/matrices/DenseMatrix.h>
 #include <src/utils.h>
 #include <src/parseInput.h>
+#include <src/const.h>
 #include "BlockedInnerABC.h"
 #include "MatmulAlgorithm.h"
 
 void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
-    CSRMatrix fullMatrixA, *localA;
-    DenseMatrix *localBPencil, *localCBlock;
+    CSRMatrix fullMatrixA, *localA, *localATmp;
+    DenseMatrix *localBPencil, *localCBlock, *fullMatrixC;
     int greaterCount;
 
     init(argc, argv);
@@ -53,9 +54,20 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
             if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
                 break;
             log("shift");
-//            shift(localAPencil, localAPencilTmp);
+            shift(localA, localATmp, groupShift);
         }
     }
+    fullMatrixC=gatherResultVerbose(localCBlock);
+
+    log("printResult");
+    if (spec.verbose) {
+        printResult(fullMatrixC);
+    } else {
+        //not yet implemented
+    }
+
+    MPI_Finalize();
+    log("after finalize");
 
 
 }
@@ -70,6 +82,8 @@ void BlockedInnerABC::createMPICommunicators() {
     int color = myRowBlock;
     MPI_Comm_split(MPI_COMM_WORLD, color, myProcessRank, &myGroup);
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &groupDenseReplicate);
+    MPI_Comm_split(MPI_COMM_WORLD, myProcessRank / spec.c, myProcessRank, &groupShift);
+    MPI_Comm_rank(groupShift, &groupShiftRank);
 
 }
 
@@ -91,6 +105,82 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseM
                 double valueB = B.get(rowB, colB - colBBegin);
                 result.add(rowA - rowABegin, colB - colBBegin, valueA * valueB);
             }
+        }
+    }
+}
+
+void BlockedInnerABC::shift(CSRMatrix *&localAPencil, CSRMatrix *&localAPencilTmp,MPI_Comm comm) {
+    MPI_Request requests[8];
+    MPI_Status statuses[8];
+
+    localAPencil->CSCMatrix::sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests, comm);
+
+    int src = (myProcessRank - 1 + numProcesses) % numProcesses;
+
+    MPI_Irecv((void *) localAPencilTmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
+
+    double *nonzeros = new double[maxANonzeros];
+    int *extents = new int[localAPencil->m + 1];
+    int *indices = new int[maxANonzeros];
+
+    MPI_Irecv(nonzeros, maxANonzeros, MPI_DOUBLE, src, SHIFT_TAGS[1],
+              comm, requests + 5);
+    MPI_Irecv(extents, localAPencil->m + 1, MPI_INT, src, SHIFT_TAGS[2], comm,
+              requests + 6);
+    MPI_Irecv(indices, maxANonzeros, MPI_INT, src, SHIFT_TAGS[3], comm,
+              requests + 7);
+
+    MPI_Waitall(8, requests, statuses);
+
+    localAPencilTmp->nonzeros = nonzeros;
+    localAPencilTmp->extents = extents;
+    localAPencilTmp->indices = indices;
+
+    swap(localAPencil, localAPencilTmp);
+
+    delete[] localAPencilTmp->nonzeros;
+    delete[] localAPencilTmp->extents;
+    delete[] localAPencilTmp->indices;
+}
+
+DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCBlock) {
+    MPI_Datatype dtLocalCBlock;
+    const size_t localCSize = sizeof(DenseMatrix) + localCBlock->n * localCBlock->m * sizeof(double);
+    MPI_Type_contiguous(localCSize, MPI_BYTE, &dtLocalCBlock);
+    MPI_Type_commit(&dtLocalCBlock);
+    DenseMatrix *receiverCMatrices = nullptr;
+    if (myProcessRank == 0) {
+        receiverCMatrices = (DenseMatrix*) malloc(numProcesses * localCSize);
+    }
+    MPI_Gather((void *)localCBlock, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, 0, MPI_COMM_WORLD);
+
+    DenseMatrix *fullC = nullptr;
+    if (myProcessRank == 0) {
+        fullC = makeDenseMatrix(n, n, 0, 0);
+        for (int i = 0; i < numProcesses; i++) {
+            DenseMatrix *m = getIthMatrix(receiverCMatrices, i);
+            for (int localRow = 0; localRow < m->n; localRow++) {
+                for (int localCol = 0; localCol < m->m; localCol++) {
+                    int row = localRow + m->shiftVertical;
+                    int col = localCol + m->shiftHorizontal;
+                    fullC->set(row,col, m->get(localRow, localCol));
+                }
+            }
+        }
+    }
+    return fullC;
+}
+
+void BlockedInnerABC::printResult(DenseMatrix *fullC) {
+    if (myProcessRank == 0) {
+        cout << nBeforeExtending << " " << nBeforeExtending << endl;
+
+        for (int row = 0; row < nBeforeExtending; row++) {
+            for(int col = 0; col < nBeforeExtending; col++) {
+                cout.precision(5);
+                cout << "   " << fixed << fullC->get(row, col) << " ";
+            }
+            cout << endl;
         }
     }
 }

@@ -75,3 +75,37 @@ void MatmulAlgorithm::replicateA(CSCMatrix &localA) {
     MPI_Bcast(&n, 1, MPI_INT, 0, myGroup);
     MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
 }
+
+void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp,MPI_Comm comm) {
+    MPI_Request requests[8];
+    MPI_Status statuses[8];
+
+    localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests, comm);
+
+    int src = (myProcessRank - 1 + numProcesses) % numProcesses;
+
+    MPI_Irecv((void *) localAPencilTmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], comm, requests + 4);
+
+    double *nonzeros = new double[maxANonzeros];
+    int *extents = new int[localAPencil->m + 1];
+    int *indices = new int[maxANonzeros];
+
+    MPI_Irecv(nonzeros, maxANonzeros, MPI_DOUBLE, src, SHIFT_TAGS[1],
+              comm, requests + 5);
+    MPI_Irecv(extents, localAPencil->m + 1, MPI_INT, src, SHIFT_TAGS[2], comm,
+              requests + 6);
+    MPI_Irecv(indices, maxANonzeros, MPI_INT, src, SHIFT_TAGS[3], comm,
+              requests + 7);
+
+    MPI_Waitall(8, requests, statuses);
+
+    localAPencilTmp->nonzeros = nonzeros;
+    localAPencilTmp->extents = extents;
+    localAPencilTmp->indices = indices;
+
+    swap(localAPencil, localAPencilTmp);
+
+    delete[] localAPencilTmp->nonzeros;
+    delete[] localAPencilTmp->extents;
+    delete[] localAPencilTmp->indices;
+}

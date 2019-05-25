@@ -30,7 +30,7 @@ public:
 
     void sendSync(int dest, const int *tags);
 
-    void sendAsync(int dest, const int *tags, MPI_Request *req);
+    void sendAsync(int dest, const int *tags, MPI_Request *req, MPI_Comm comm);
 
     void receiveSync(int src, const int *tags);
 };

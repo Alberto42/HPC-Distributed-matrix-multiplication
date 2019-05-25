@@ -12,7 +12,9 @@
 class BlockedInnerABC : public MatmulAlgorithm{
 public:
     MPI_Comm groupDenseReplicate;
+    MPI_Comm groupShift;
     int myRowBlock;
+    int groupShiftRank;
     void innerABCAlgorithm(int argc,char **argv);
 
     void createMPICommunicators();
@@ -20,6 +22,12 @@ public:
     void calcGroups();
 
     void sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, DenseMatrix &result);
+
+    void shift(CSRMatrix *&localAPencil, CSRMatrix *&localAPencilTmp, MPI_Comm comm);
+
+    DenseMatrix * gatherResultVerbose(DenseMatrix *localCBlock);
+
+    void printResult(DenseMatrix *fullC);
 };
 
 

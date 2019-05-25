@@ -116,12 +116,12 @@ void CSCMatrix::sendSync(int dest, const int *tags) {
     MPI_Send((const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD);
 }
 
-void CSCMatrix::sendAsync(int dest, const int *tags, MPI_Request *req) {
+void CSCMatrix::sendAsync(int dest, const int *tags, MPI_Request *req, MPI_Comm comm) {
     size_t size = sizeof(CSCMatrix);
-    MPI_Isend((const void *) this, size, MPI_BYTE, dest, tags[0], MPI_COMM_WORLD, req);
-    MPI_Isend((const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], MPI_COMM_WORLD, req + 1);
-    MPI_Isend((const void *) extents, m + 1, MPI_INT, dest, tags[2], MPI_COMM_WORLD, req + 2);
-    MPI_Isend((const void *) indices, count, MPI_INT, dest, tags[3], MPI_COMM_WORLD, req + 3);
+    MPI_Isend((const void *) this, size, MPI_BYTE, dest, tags[0], comm, req);
+    MPI_Isend((const void *) nonzeros, count, MPI_DOUBLE, dest, tags[1], comm, req + 1);
+    MPI_Isend((const void *) extents, m + 1, MPI_INT, dest, tags[2], comm, req + 2);
+    MPI_Isend((const void *) indices, count, MPI_INT, dest, tags[3], comm, req + 3);
 }
 
 void CSCMatrix::receiveSync(int src, const int *tags) {

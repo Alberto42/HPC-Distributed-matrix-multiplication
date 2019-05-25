@@ -17,13 +17,13 @@ public:
     MPI_Comm myGroup;
     void init(int argc, char **argv);
 
-
-
     void extendA(CSCMatrix *fullMatrixA, int numProcesses);
 
     void scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &localA);
 
     void replicateA(CSCMatrix &localA);
+
+    void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp, MPI_Comm comm);
 };
 
 

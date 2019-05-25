@@ -23,8 +23,6 @@ public:
 
     void sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result);
 
-    void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp);
-
     DenseMatrix *gatherResultVerbose(DenseMatrix *localCPencil);
 
     int gatherResultGreater(DenseMatrix *localCPencil);

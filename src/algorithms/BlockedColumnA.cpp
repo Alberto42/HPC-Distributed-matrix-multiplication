@@ -50,40 +50,6 @@ void BlockedColumnA::calcGroups() {
     numberOfBlocks = numProcesses / spec.c;
 }
 
-void BlockedColumnA::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp) {
-    MPI_Request requests[8];
-    MPI_Status statuses[8];
-
-    localAPencil->sendAsync((myProcessRank + 1) % numProcesses, SHIFT_TAGS, requests);
-
-    int src = (myProcessRank - 1 + numProcesses) % numProcesses;
-
-    MPI_Irecv((void *) localAPencilTmp, sizeof(CSCMatrix), MPI_BYTE, src, SHIFT_TAGS[0], MPI_COMM_WORLD, requests + 4);
-
-    double *nonzeros = new double[maxANonzeros];
-    int *extents = new int[localAPencil->m + 1];
-    int *indices = new int[maxANonzeros];
-
-    MPI_Irecv(nonzeros, maxANonzeros, MPI_DOUBLE, src, SHIFT_TAGS[1],
-              MPI_COMM_WORLD, requests + 5);
-    MPI_Irecv(extents, localAPencil->m + 1, MPI_INT, src, SHIFT_TAGS[2], MPI_COMM_WORLD,
-              requests + 6);
-    MPI_Irecv(indices, maxANonzeros, MPI_INT, src, SHIFT_TAGS[3], MPI_COMM_WORLD,
-              requests + 7);
-
-    MPI_Waitall(8, requests, statuses);
-
-    localAPencilTmp->nonzeros = nonzeros;
-    localAPencilTmp->extents = extents;
-    localAPencilTmp->indices = indices;
-
-    swap(localAPencil, localAPencilTmp);
-
-    delete[] localAPencilTmp->nonzeros;
-    delete[] localAPencilTmp->extents;
-    delete[] localAPencilTmp->indices;
-}
-
 DenseMatrix *BlockedColumnA::gatherResultVerbose(DenseMatrix *localCPencil) {
     MPI_Datatype dtDenseMatrix;
     const size_t localCPencilSize = sizeof(DenseMatrix) + n * localCPencil->m * sizeof(double);
@@ -198,7 +164,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
             if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
                 break;
             log("shift");
-            shift(localAPencil, localAPencilTmp);
+            shift(localAPencil, localAPencilTmp, MPI_COMM_WORLD);
         }
         if (j != spec.exponent - 1)
             assignCMatrixToBMatrix(localBPencil, localCPencil);
