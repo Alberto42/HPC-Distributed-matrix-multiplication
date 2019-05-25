@@ -10,7 +10,7 @@
 #include "MatmulAlgorithm.h"
 
 void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
-    CSRMatrix fullMatrixA, localA;
+    CSRMatrix fullMatrixA, *localA;
     DenseMatrix *localBPencil, *localCBlock;
     int greaterCount;
 
@@ -28,7 +28,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         extendA(&fullMatrixA, numProcesses);
         n = fullMatrixA.n;
     }
-    scatterAAmongGroups(fullMatrixA, localA);
+    scatterAAmongGroups(fullMatrixA, *localA);
     if (myProcessRank < numberOfBlocks) {
         localBPencil = makeDenseMatrix(myProcessRank, numberOfBlocks, n, spec.seed, nBeforeExtending);
     }
@@ -37,13 +37,25 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
 
     log("replicateA");
-    replicateA(localA);
+    replicateA(*localA);
 
     const int blockCWidth = n / numberOfBlocks;
     const int blockCLength = blockCWidth * (numberOfBlocks/spec.c);
     const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
 
     localCBlock = makeDenseMatrix(blockCWidth, blockCLength,CShiftHorizontal, myRowBlock*blockCWidth);
+
+    log("main loop");
+    for (int j = 0; j < spec.exponent; j++) {
+        for (int i = 0; i < numberOfBlocks/spec.c; i++) {
+            log("sparseTimesDense");
+            sparseTimesDense(*localA, *localBPencil, *localCBlock);
+            if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
+                break;
+            log("shift");
+//            shift(localAPencil, localAPencilTmp);
+        }
+    }
 
 
 }
@@ -65,18 +77,19 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix&A, DenseMatrix &B, DenseM
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
-        int colA = i - 1 + A.shift;
+        int rowA = i - 1 + A.shift;
 
         for (int j = extentBegin; j < extentEnd; j++) {
-            int rowA = A.indices[j];
+            int colA = A.indices[j];
             double valueA = A.nonzeros[j];
             int rowB = colA;
             int colBBegin = B.shiftHorizontal;
             int colBEnd = B.shiftHorizontal + B.m;
+            int rowABegin = B.shiftVertical;
 
             for (int colB = colBBegin; colB < colBEnd; colB++) {
                 double valueB = B.get(rowB, colB - colBBegin);
-                result.add(rowA, colB - colBBegin, valueA * valueB);
+                result.add(rowA - rowABegin, colB - colBBegin, valueA * valueB);
             }
         }
     }
