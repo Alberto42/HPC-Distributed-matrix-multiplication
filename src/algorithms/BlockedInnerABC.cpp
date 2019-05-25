@@ -33,6 +33,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         n = fullMatrixA.n;
     }
     scatterAAmongGroups(fullMatrixA, *localA);
+
     if (myProcessRank < numberOfBlocks) {
         localBPencil = makeDenseMatrix(myProcessRank, numberOfBlocks, n, spec.seed, nBeforeExtending);
     }
@@ -62,7 +63,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         for (int i = 0; i < numberOfBlocks/spec.c; i++) {
             log("sparseTimesDense");
             sparseTimesDense(*localA, *localBPencil, *localCPencil);
-            if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
+            if (i == numberOfBlocks/spec.c - 1 && j == spec.exponent - 1)
                 break;
             log("shift");
             shift(localA, localATmp, groupShift);
@@ -70,6 +71,8 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         if (j != spec.exponent - 1)
             assignCMatrixToBMatrix(localBPencil, localCPencil);
     }
+    log("localCPencil after multiplication");
+    log(*localCPencil);
     fullMatrixC=gatherResultVerbose(localCPencil);
 
     log("printResult");
@@ -88,7 +91,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 void BlockedInnerABC::calcGroups() {
     assert(numProcesses % (spec.c * spec.c) == 0);
     numberOfBlocks = numProcesses / spec.c;
-    myRowBlock = ( (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c) + myProcessRank ) % numberOfBlocks;
+    myRowBlock = ( (myProcessRank / numberOfBlocks)*(numberOfBlocks/spec.c) + (myProcessRank % numberOfBlocks) ) % numberOfBlocks;
 }
 
 void BlockedInnerABC::createMPICommunicators() {

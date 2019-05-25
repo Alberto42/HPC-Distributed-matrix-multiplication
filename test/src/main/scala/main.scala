@@ -45,7 +45,8 @@ object main extends App {
         val myResultFile = new File(s"../cmake-build-debug/outputs_tests/${result.getName}")
         myResultFile.createNewFile()
         val paramteresCombinations = List((2, 2), (4, 2), (6, 2), (6, 3))
-        paramteresCombinations.foreach {
+        val paramteresCombinations2 = List((4, 2))
+        paramteresCombinations2.foreach {
           case (n, c) => {
             val runCommand = s"mpiexec -n $n $matrixmul -f ${sparseMatrix.getCanonicalPath} -s $a -c $c -e $x -v -i"
             val ret = runCommand #> myResultFile !
