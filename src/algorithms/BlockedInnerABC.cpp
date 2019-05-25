@@ -43,12 +43,18 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     log("replicateA");
     replicateA(*localA);
 
+    log("*localBPencil");
+    log(*localBPencil);
+    log(*localA);
+
     const int blockCWidth = n / numberOfBlocks;
     const int blockCLength = blockCWidth * (numberOfBlocks/spec.c);
     const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
 
     localCBlock = makeDenseMatrix(blockCWidth, blockCLength,CShiftHorizontal, myRowBlock*blockCWidth);
 
+    log("localCBlock");
+    log(*localCBlock);
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
         for (int i = 0; i < numberOfBlocks/spec.c; i++) {

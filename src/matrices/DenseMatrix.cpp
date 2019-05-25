@@ -48,6 +48,7 @@ DenseMatrix *makeDenseMatrix(int pencilNumber, int numProcesses, int n, int seed
     d->n = n;
     d->m = columnsInPeace;
     d->shiftHorizontal = colRangeBegin;
+    d->shiftVertical = 0;
 
     for (int row = 0; row < n; row++) {
         for (int col = colRangeBegin; col < colRangeEnd; col++) {

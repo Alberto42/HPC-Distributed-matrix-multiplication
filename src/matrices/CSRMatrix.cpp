@@ -100,7 +100,7 @@ ostream &operator<<(ostream &os, const CSRMatrix &matrix) {
     os << "nonzeros: " << matrix.nonzeros << " extents: " << matrix.extents << " indices: " << matrix.indices << " n: "
        << matrix.n << " m: " << matrix.m << " count: " << matrix.count << " maxNonzeroInRow: " << matrix.maxNonzeroInRow
        << " offset: " << matrix.offset <<  " shiftVertical: "
-       << matrix.shift;
+       << matrix.shift << endl;
     printArray<double>(matrix.nonzeros, matrix.count, os);
     printArray<int>(matrix.extents, matrix.m + 1, os);
     printArray<int>(matrix.indices, matrix.count, os);
