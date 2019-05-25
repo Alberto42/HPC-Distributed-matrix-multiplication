@@ -37,14 +37,17 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         localBPencil = makeDenseMatrix(myProcessRank, numberOfBlocks, n, spec.seed, nBeforeExtending);
     }
 
-    log("replicateB");
-    MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
-
     log("replicateA");
     replicateA(*localA);
 
     const int blockCWidth = n / numberOfBlocks;
     const int CShiftHorizontal = (myProcessRank % numberOfBlocks) * blockCWidth;
+
+    log("replicateB");
+    if (myProcessRank >= numberOfBlocks) {
+        localBPencil = makeDenseMatrix(n,blockCWidth, CShiftHorizontal, 0);
+    }
+    MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
 
     localCPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
 
