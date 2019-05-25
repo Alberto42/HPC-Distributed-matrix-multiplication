@@ -24,6 +24,8 @@ public:
     void replicateA(CSCMatrix &localA);
 
     void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp, MPI_Comm comm);
+
+    int gatherResultGreater(DenseMatrix *localCPencil);
 };
 
 

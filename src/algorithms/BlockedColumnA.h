@@ -25,8 +25,6 @@ public:
 
     DenseMatrix *gatherResultVerbose(DenseMatrix *localCPencil);
 
-    int gatherResultGreater(DenseMatrix *localCPencil);
-
     void printResult(DenseMatrix *receiverCMatrices);
 
     void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil);

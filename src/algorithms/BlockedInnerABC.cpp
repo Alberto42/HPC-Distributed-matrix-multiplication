@@ -12,11 +12,11 @@
 
 void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
     CSRMatrix fullMatrixA, *localA, *localATmp;
+    DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
+    int greaterCount;
 
     localA = new CSRMatrix();
     localATmp = new CSRMatrix();
-    DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
-    int greaterCount;
 
     init(argc, argv);
     calcGroups();
@@ -32,6 +32,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
         extendA(&fullMatrixA, numProcesses);
         n = fullMatrixA.n;
     }
+
     scatterAAmongGroups(fullMatrixA, *localA);
 
     if (myProcessRank < numberOfBlocks) {
@@ -52,34 +53,32 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 
     localCPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
 
+    log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
         for (int i = 0; i < numberOfBlocks/spec.c; i++) {
-            log("sparseTimesDense");
-            log("localA");
-            log(*localA);
-            log("*localBPencil");
-            log(*localBPencil);
-            log("localCPencil");
-            log(*localCPencil);
-            log("main loop");
             sparseTimesDense(*localA, *localBPencil, *localCPencil);
             if (i == numberOfBlocks/spec.c - 1 && j == spec.exponent - 1)
                 break;
-            log("shift");
             shift(localA, localATmp, groupShift);
         }
         if (j != spec.exponent - 1)
             gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
     }
-    log("localCPencil after multiplication");
-    log(*localCPencil);
-    fullMatrixC=gatherResultVerbose(localCPencil);
+
+    if (spec.verbose) {
+        fullMatrixC=gatherResultVerbose(localCPencil);
+    } else {
+        gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
+        greaterCount = gatherResultGreater(localBPencil) / spec.c;
+    }
 
     log("printResult");
-    if (spec.verbose) {
-        printResult(fullMatrixC);
-    } else {
-        //not yet implemented
+    if (myProcessRank == 0) {
+        if (spec.verbose) {
+            printResult(fullMatrixC);
+        } else {
+            cout << greaterCount << endl;
+        }
     }
 
     MPI_Finalize();

@@ -64,28 +64,6 @@ DenseMatrix *BlockedColumnA::gatherResultVerbose(DenseMatrix *localCPencil) {
     return receiverCMatrices;
 }
 
-int BlockedColumnA::gatherResultGreater(DenseMatrix *localCPencil) {
-    int localGreaterCount = 0;
-    for (int row = 0; row < nBeforeExtending; row++) {
-        for (int col = 0; localCPencil->shiftHorizontal + col < nBeforeExtending && col < localCPencil->m; col++) {
-            localGreaterCount += (localCPencil->get(row, col) >= spec.g);
-        }
-    }
-    int *buff = nullptr;
-    if (myProcessRank == 0) {
-        buff = new int[numProcesses];
-    }
-    MPI_Gather(&localGreaterCount, 1, MPI_INT, buff, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    if (myProcessRank == 0) {
-        int totalCount = 0;
-        for (int i = 0; i < numProcesses; i++)
-            totalCount += buff[i];
-        return totalCount;
-    } else
-        return -1;
-
-}
-
 void BlockedColumnA::printResult(DenseMatrix *receiverCMatrices) {
     if (myProcessRank == 0) {
         cout << nBeforeExtending << " " << nBeforeExtending << endl;
