@@ -28,6 +28,8 @@ public:
     DenseMatrix * gatherResultVerbose(DenseMatrix *localCBlock);
 
     void printResult(DenseMatrix *fullC);
+
+    void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCBlock);
 };
 
 

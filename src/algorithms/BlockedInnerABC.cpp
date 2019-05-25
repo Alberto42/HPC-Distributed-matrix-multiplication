@@ -65,6 +65,8 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
             log("shift");
             shift(localA, localATmp, groupShift);
         }
+        if (j != spec.exponent - 1)
+            assignCMatrixToBMatrix(localBPencil, localCBlock);
     }
     fullMatrixC=gatherResultVerbose(localCBlock);
 
@@ -192,6 +194,15 @@ void BlockedInnerABC::printResult(DenseMatrix *fullC) {
             cout << endl;
         }
     }
+}
+
+void BlockedInnerABC::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCBlock) {
+    assert(localBPencil->m == localCBlock->m);
+    assert(localCBlock->n == localCBlock->m);
+    memcpy(localBPencil->matrix + localCBlock->shiftVertical * localBPencil->m, localCBlock->matrix, localCBlock->n * localCBlock->n * sizeof(double));
+    for (int i = 0; i < localCBlock->n * localCBlock->m; i++)
+        localCBlock->matrix[i] = 0;
+
 }
 
 
