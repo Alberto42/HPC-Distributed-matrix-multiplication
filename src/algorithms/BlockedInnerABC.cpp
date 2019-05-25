@@ -69,7 +69,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
             shift(localA, localATmp, groupShift);
         }
         if (j != spec.exponent - 1)
-            assignCMatrixToBMatrix(localBPencil, localCPencil);
+            gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
     }
     log("localCPencil after multiplication");
     log(*localCPencil);
@@ -159,6 +159,44 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp,MPI_Comm c
     delete[] localATmp->nonzeros;
     delete[] localATmp->extents;
     delete[] localATmp->indices;
+}
+
+void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *localBPencil ,DenseMatrix *localCPencil, MPI_Comm comm) {
+    assert(localBPencil->n == localCPencil->n);
+    assert(localBPencil->m == localCPencil->m);
+    MPI_Datatype dtLocalCBlock;
+    const size_t localCSize = sizeof(DenseMatrix) + localCPencil->n * localCPencil->m * sizeof(double);
+    MPI_Type_contiguous(localCSize, MPI_BYTE, &dtLocalCBlock);
+    MPI_Type_commit(&dtLocalCBlock);
+    DenseMatrix *receiverCMatrices = nullptr;
+
+    int numProcessesInGroup;
+    MPI_Comm_size(comm, &numProcessesInGroup);
+
+    receiverCMatrices = (DenseMatrix*) malloc(numProcessesInGroup * localCSize);
+
+    MPI_Allgather((void *)localCPencil, 1, dtLocalCBlock,receiverCMatrices, 1, dtLocalCBlock, comm);
+
+    for(int i=0;i<localCPencil->n;i++) {}
+    for (int i = 0; i < numProcessesInGroup; i++) {
+        DenseMatrix *m = getIthMatrix(receiverCMatrices, i);
+        for (int localRow = 0; localRow < m->n; localRow++) {
+            for (int localCol = 0; localCol < m->m; localCol++) {
+                if (i == 0)
+                    localBPencil->set(localRow,localCol,0);
+                localBPencil->add(localRow,localCol, m->get(localRow, localCol));
+            }
+        }
+    }
+
+    for (int row = 0; row < localCPencil->n; row++) {
+        for (int col = 0; col < localCPencil->m; col++) {
+            localCPencil->set(row,col,0);
+        }
+    }
+
+    delete[] receiverCMatrices;
+
 }
 
 DenseMatrix* BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {

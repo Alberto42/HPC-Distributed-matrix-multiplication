@@ -30,6 +30,8 @@ public:
     void printResult(DenseMatrix *fullC);
 
     void assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil);
+
+    void gatherResultAfterMultiplicationAndAssign(DenseMatrix *localBPencil, DenseMatrix *localCPencil, MPI_Comm comm);
 };
 
 
