@@ -5,12 +5,14 @@
 #include "DenseMatrix.h"
 #include "src/densematgen.h"
 #include <cstdlib>
+#include <assert.h>
 #include "src/utils.h"
 
 
 DenseMatrix::DenseMatrix() {}
 
 void DenseMatrix::set(int row, int col, double value) {
+    assert(row < n && col < m);
     matrix[row * m + col] = value;
 }
 
@@ -19,6 +21,7 @@ void DenseMatrix::add(int row, int col, double value) {
 }
 
 double DenseMatrix::get(const int row, const int col) {
+    assert(row < n && col < m);
     return matrix[row * m + col];
 }
 
@@ -27,7 +30,7 @@ size_t DenseMatrix::size() {
 }
 
 ostream &operator<<(ostream &os, DenseMatrix &matrix) {
-    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shiftHorizontal << endl;
+    os << "n: " << matrix.n << " m: " << matrix.m << " shift: " << matrix.shiftHorizontal << " " << matrix.shiftVertical << endl;
 
     for(int row=0;row<matrix.n;row++) {
         for(int col=0;col<matrix.m;col++) {

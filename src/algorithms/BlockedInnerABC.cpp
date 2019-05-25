@@ -84,7 +84,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc,char **argv){
 void BlockedInnerABC::calcGroups() {
     assert(numProcesses % (spec.c * spec.c) == 0);
     numberOfBlocks = numProcesses / spec.c;
-    myRowBlock = (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c);
+    myRowBlock = ( (numProcesses % numberOfBlocks)+(numProcesses / numberOfBlocks) * (numberOfBlocks/spec.c) + myProcessRank ) % numberOfBlocks;
 }
 
 void BlockedInnerABC::createMPICommunicators() {
