@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-cp CMakeListsOkeanos.txt CMakeLists.txt
 cd cmake-build-debug
+cp ../CMakeListsOkeanos.txt ../CMakeLists.txt
 cmake ..
 make
 
-rm -rf tests
-cp -r ../tests .
+#rm -rf tests
+#cp -r ../tests .
 
 cp -f ../batch.batch .
+cp -f ../runOkeanos.sh .
