@@ -38,7 +38,7 @@ configure_file(run.sh . COPYONLY)
 #        )
 
 add_custom_target(setEnv
-        COMMAND ../setEnv.sh
+        COMMAND . ../setEnv.sh
         )
 add_dependencies(matrixmul setEnv)
 
