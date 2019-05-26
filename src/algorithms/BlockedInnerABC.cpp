@@ -9,6 +9,7 @@
 #include <src/const.h>
 #include "BlockedInnerABC.h"
 #include "MatmulAlgorithm.h"
+#include <cstring>
 
 void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     CSRMatrix fullMatrixA, *localA, *localATmp;

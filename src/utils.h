@@ -5,8 +5,8 @@
 #ifndef AC370756_UTILS_H
 #define AC370756_UTILS_H
 
-#include <fstream>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
