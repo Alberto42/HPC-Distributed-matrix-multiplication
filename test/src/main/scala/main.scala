@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils
 import scala.io.Source
 import scala.sys.process._
 
+
 object main extends App {
   def filesEqual(file1 : File, file2 : File) : Boolean= {
     var result : Boolean = true

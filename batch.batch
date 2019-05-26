@@ -7,5 +7,5 @@
 #SBATCH --tasks-per-node 2           # each node is 2 socket, 12 core, so we want 24 tasks on each node
 #SBATCH --time 00:05:00               # if the job runs longer than this, it'll be killed
 
-srun ./matrixmul -f tests/1 -s 42 -c 1 -e 2 -i -v
+srun ./matrixmul -f tests/2 -s 42 -c 1 -e 2 -i -v
 #srun ./testTarget
