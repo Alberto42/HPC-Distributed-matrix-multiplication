@@ -111,20 +111,20 @@ void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTm
     delete[] localAPencilTmp->indices;
 }
 
-int MatmulAlgorithm::gatherResultGreater(DenseMatrix *localCPencil) {
-    int localGreaterCount = 0;
+long long MatmulAlgorithm::gatherResultGreater(DenseMatrix *localCPencil) {
+    long long localGreaterCount = 0;
     for (int row = 0; row < nBeforeExtending; row++) {
         for (int col = 0; localCPencil->shiftHorizontal + col < nBeforeExtending && col < localCPencil->m; col++) {
             localGreaterCount += (localCPencil->get(row, col) >= spec.g);
         }
     }
-    int *buff = nullptr;
+    long long *buff = nullptr;
     if (myProcessRank == 0) {
-        buff = new int[numProcesses];
+        buff = new long long[numProcesses];
     }
-    MPI_Gather(&localGreaterCount, 1, MPI_INT, buff, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&localGreaterCount, 1, MPI_LONG_LONG, buff, 1, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
     if (myProcessRank == 0) {
-        int totalCount = 0;
+        long long totalCount = 0;
         for (int i = 0; i < numProcesses; i++)
             totalCount += buff[i];
         return totalCount;

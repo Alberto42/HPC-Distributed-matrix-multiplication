@@ -8,7 +8,8 @@
 
 struct ProgramSpec {
     std::__cxx11::string file;
-    int seed, c, exponent, g;
+    int seed, c, exponent;
+    double g;
     bool verbose, i, m;
 
     ProgramSpec();

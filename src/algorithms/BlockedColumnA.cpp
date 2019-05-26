@@ -98,7 +98,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     localAPencil = new CSCMatrix();
     localAPencilTmp = new CSCMatrix();
     DenseMatrix *localBPencil, *localCPencil;
-    int greaterCount;
+    long long greaterCount;
     DenseMatrix *receiverCMatrices;
     double startTime, endTime;
 
@@ -137,11 +137,9 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     log("main loop");
     for (int j = 0; j < spec.exponent; j++) {
         for (int i = 0; i < numberOfBlocks; i++) {
-            log("sparseTimesDense");
             sparseTimesDense(*localAPencil, *localBPencil, *localCPencil);
             if (i == numberOfBlocks - 1 && j == spec.exponent - 1)
                 break;
-            log("shift");
             shift(localAPencil, localAPencilTmp, MPI_COMM_WORLD);
         }
         if (j != spec.exponent - 1)
@@ -159,6 +157,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     if (myProcessRank == 0) {
         endTime = MPI_Wtime();
+        stream() << "Total time: " << endTime - startTime << endl;
     }
     log("printResult");
     if (spec.verbose) {

@@ -14,7 +14,8 @@
 void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     CSRMatrix fullMatrixA, *localA, *localATmp;
     DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
-    int greaterCount;
+    long long greaterCount;
+    double startTime, endTime;
 
     localA = new CSRMatrix();
     localATmp = new CSRMatrix();
@@ -38,6 +39,11 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
 
     if (myProcessRank < numberOfBlocks) {
         localBPencil = makeDenseMatrix(myProcessRank, numberOfBlocks, n, spec.seed, nBeforeExtending);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myProcessRank == 0) {
+        startTime = MPI_Wtime();
     }
 
     log("replicateA");
@@ -71,6 +77,12 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     } else {
         gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
         greaterCount = gatherResultGreater(localBPencil) / spec.c;
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myProcessRank == 0) {
+        endTime = MPI_Wtime();
+        stream() << "Total time: " << endTime - startTime << endl;
     }
 
     log("printResult");

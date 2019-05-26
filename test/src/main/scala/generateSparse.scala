@@ -14,10 +14,10 @@ object generateSparse extends App {
     try { op(p) } finally { p.close() }
   }
 
-  val n = 24*24*12
+  val n = 65536
 //  val n = 10
   val maxNonzero=42
-  val nonZeros = 1000000
+  val nonZeros = 41*65536
 //  val nonZeros = 10
   val (valuesBegin, valuesEnd) = (0,1.0)
 
@@ -36,7 +36,7 @@ object generateSparse extends App {
     }}.map(a => a.toString).foldLeft(new StringBuilder())((b,s) => b.append(s).append(" ")).toString()
   println("after indices")
 
-  private val testFile = new File("../tests/2")
+  private val testFile = new File("../tests/paper1")
   testFile.createNewFile()
   printToFile(testFile) { p =>
     p.println(s"$n $n $nonZeros $maxNonzero")

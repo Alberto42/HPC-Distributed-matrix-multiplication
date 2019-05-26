@@ -26,7 +26,7 @@ public:
 
     void shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp, MPI_Comm comm);
 
-    int gatherResultGreater(DenseMatrix *localCPencil);
+    long long gatherResultGreater(DenseMatrix *localCPencil);
 };
 
 

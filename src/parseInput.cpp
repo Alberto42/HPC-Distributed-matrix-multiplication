@@ -25,7 +25,7 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
                 ("s", boost::program_options::value<int>(), "Seed")
                 ("c", boost::program_options::value<int>())
                 ("e", boost::program_options::value<int>())
-                ("g", boost::program_options::value<int>())
+                ("g", boost::program_options::value<double>())
                 ("v", "verbose")
                 ("i", "i")
                 ("m", "m")
@@ -51,7 +51,7 @@ void parseArgs(int argc, char **argv, ProgramSpec &s) {
         s.c = vm["c"].as<int>();
         s.exponent = vm["e"].as<int>();
         if (vm.find("g") != vm.end()) {
-            s.g = vm["g"].as<int>();
+            s.g = vm["g"].as<double>();
         }
         if (vm.find("v") != vm.end()) {
             s.verbose = true;
