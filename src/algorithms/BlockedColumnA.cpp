@@ -106,7 +106,6 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     DenseMatrix *localBPencil, *localCPencil;
     long long greaterCount;
     DenseMatrix *receiverCMatrices;
-    double startTime, endTime;
 
     init(argc, argv);
     calcGroups();
@@ -129,6 +128,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
 
     MPI_Barrier(MPI_COMM_WORLD);
+    startTime = steady_clock::now();
 
     log("replicateA");
     replicateA(*localAPencil);
@@ -153,13 +153,17 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     }
 
     log("gatherResult");
+    gatherStartTime = steady_clock::now();
     if (spec.verbose) {
         receiverCMatrices = gatherResultVerbose(localCPencil);
     } else {
         greaterCount = gatherResultGreater(localCPencil);
     }
+    gatherEndTime = steady_clock::now();
 
     MPI_Barrier(MPI_COMM_WORLD);
+    endTime = steady_clock::now();
+
     log("printResult");
     if (spec.verbose) {
         printResult(receiverCMatrices);
@@ -172,6 +176,10 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     MPI_Finalize();
     log("after finalize");
     stream() << "sparseTimesDenseTotal: " << sparseTimeDenseTotalTime << endl;
+    stream() << "shiftTotal: " << shiftTotalTime << endl;
+    stream() << "replicateATotal: " << timeDiffInMs(replicateStartTime, replicateEndTime) << endl;
+    stream() << "gatherTotal: " << timeDiffInMs(gatherStartTime, gatherEndTime) << endl;
+    stream() << "totalAlgorithmTime: " << timeDiffInMs(startTime, endTime) << endl;
     delete[] localAPencil->nonzeros;
     delete[] localAPencil->extents;
     delete[] localAPencil->indices;

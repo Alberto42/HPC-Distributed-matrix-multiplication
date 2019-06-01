@@ -10,6 +10,9 @@
 #include <src/const.h>
 #include <src/matrices/DenseMatrix.h>
 #include "MatmulAlgorithm.h"
+#include <chrono>
+
+using namespace std::chrono;
 
 
 void MatmulAlgorithm::init(int argc, char **argv) {
@@ -18,6 +21,7 @@ void MatmulAlgorithm::init(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     initLogger(myProcessRank);
     sparseTimeDenseTotalTime = 0;
+    shiftTotalTime = 0;
 }
 
 void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {
@@ -63,6 +67,7 @@ void MatmulAlgorithm::scatterAAmongGroups(CSCMatrix &fullMatrixA, CSCMatrix &loc
 }
 
 void MatmulAlgorithm::replicateA(CSCMatrix &localA) {
+    replicateStartTime = steady_clock::now();
     MPI_Bcast((void *) &localA, sizeof(CSCMatrix), MPI_BYTE, 0, myGroup);
     if (myProcessRank >= numberOfBlocks) {
         localA.nonzeros = new double[localA.count];
@@ -76,9 +81,14 @@ void MatmulAlgorithm::replicateA(CSCMatrix &localA) {
     MPI_Bcast(&maxANonzeros, 1, MPI_INT, 0, myGroup);
     MPI_Bcast(&n, 1, MPI_INT, 0, myGroup);
     MPI_Bcast(&nBeforeExtending, 1, MPI_INT, 0, myGroup);
+
+    replicateEndTime = steady_clock::now();
 }
 
 void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTmp, MPI_Comm comm) {
+
+    steady_clock::time_point begin = steady_clock::now();
+
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
@@ -110,6 +120,9 @@ void MatmulAlgorithm::shift(CSCMatrix *&localAPencil, CSCMatrix *&localAPencilTm
     delete[] localAPencilTmp->nonzeros;
     delete[] localAPencilTmp->extents;
     delete[] localAPencilTmp->indices;
+
+    steady_clock::time_point end = steady_clock::now();
+    shiftTotalTime += timeDiffInMs(begin,end);
 }
 
 long long MatmulAlgorithm::gatherResultGreater(DenseMatrix *localCPencil) {

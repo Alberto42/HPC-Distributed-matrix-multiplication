@@ -5,6 +5,9 @@
 #ifndef AC370756_MATMULALGORITHM_H
 #define AC370756_MATMULALGORITHM_H
 
+#include <chrono>
+
+using namespace std::chrono;
 
 class MatmulAlgorithm {
 public:
@@ -15,7 +18,8 @@ public:
     int n, nBeforeExtending;
     int maxANonzeros;
     MPI_Comm myGroup;
-    double sparseTimeDenseTotalTime;
+    double sparseTimeDenseTotalTime, shiftTotalTime;
+    steady_clock::time_point startTime, endTime, replicateStartTime, replicateEndTime, gatherStartTime, gatherEndTime;
 
     void init(int argc, char **argv);
 
