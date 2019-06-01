@@ -22,6 +22,7 @@ void MatmulAlgorithm::init(int argc, char **argv) {
     initLogger(myProcessRank);
     sparseTimeDenseTotalTime = 0;
     shiftTotalTime = 0;
+    assignTotalTime = 0;
 }
 
 void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {

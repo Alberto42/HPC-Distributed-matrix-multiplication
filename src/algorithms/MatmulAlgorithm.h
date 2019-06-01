@@ -18,7 +18,7 @@ public:
     int n, nBeforeExtending;
     int maxANonzeros;
     MPI_Comm myGroup;
-    double sparseTimeDenseTotalTime, shiftTotalTime;
+    double sparseTimeDenseTotalTime, shiftTotalTime, assignTotalTime;
     steady_clock::time_point startTime, endTime, replicateStartTime, replicateEndTime, gatherStartTime, gatherEndTime;
 
     void init(int argc, char **argv);

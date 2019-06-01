@@ -12,3 +12,5 @@ module swap PrgEnv-gnu PrgEnv-cray
 pat_report -o fw-trace-report.txt matrixmul+42
 
 app2 matrixmul+ #index2.ap
+
+module load intel

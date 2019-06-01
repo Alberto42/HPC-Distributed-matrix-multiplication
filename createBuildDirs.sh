@@ -41,3 +41,17 @@ mkdir error
 mkdir logger
 
 cd ..
+
+cd build_48_192
+cp ../matrixmul .
+cp -r ../tests .
+
+rm -rf matrixmul+*
+rm -rf output
+rm -rf error
+rm -rf logger
+mkdir output
+mkdir error
+mkdir logger
+
+cd ..

@@ -89,10 +89,14 @@ void BlockedColumnA::printResult(DenseMatrix *receiverCMatrices) {
 }
 
 void BlockedColumnA::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
+    steady_clock::time_point assignStartTime = steady_clock::now();
     assert(localBPencil->size() == localCPencil->size());
     memcpy(localBPencil, localCPencil, localBPencil->size());
-    for (int i = 0; i < localCPencil->n * localCPencil->m; i++)
+    for (int i = 0; i < localCPencil->n * localCPencil->m; i++) {
         localCPencil->matrix[i] = 0;
+    }
+    steady_clock::time_point assignEndTime = steady_clock::now();
+    assignTotalTime += timeDiffInMs(assignStartTime, assignEndTime);
 
 }
 
@@ -175,8 +179,10 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     MPI_Finalize();
     log("after finalize");
+    log("");
     stream() << "sparseTimesDenseTotal: " << sparseTimeDenseTotalTime << endl;
     stream() << "shiftTotal: " << shiftTotalTime << endl;
+    stream() << "assignTotal: " << assignTotalTime<< endl << endl;
     stream() << "replicateATotal: " << timeDiffInMs(replicateStartTime, replicateEndTime) << endl;
     stream() << "gatherTotal: " << timeDiffInMs(gatherStartTime, gatherEndTime) << endl;
     stream() << "totalAlgorithmTime: " << timeDiffInMs(startTime, endTime) << endl;
