@@ -17,6 +17,7 @@ void MatmulAlgorithm::init(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myProcessRank);
     MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     initLogger(myProcessRank);
+    sparseTimeDenseTotalTime = 0;
 }
 
 void MatmulAlgorithm::extendA(CSCMatrix *fullMatrixA, int numProcesses) {

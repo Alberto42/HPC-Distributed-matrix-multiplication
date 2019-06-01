@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <chrono>
 #include "utils.h"
-
+using namespace std::chrono;
 
 Logger::Logger(int myProcessNo) {
     mkdir("logger", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -45,4 +45,8 @@ void initLogger(int myProcessNo) {
 
 ofstream &stream() {
     return utils::logger->stream();
+}
+
+double timeDiffInMs(steady_clock::time_point a, steady_clock::time_point b) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count() / 1000.0;
 }

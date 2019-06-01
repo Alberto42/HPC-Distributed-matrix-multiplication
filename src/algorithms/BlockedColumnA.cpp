@@ -18,14 +18,18 @@
 #include "src/algorithms/BlockedInnerABC.h"
 #include "src/const.h"
 #include <cstring>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 void BlockedColumnA::createMPICommunicators() {
     MPI_Comm_split(MPI_COMM_WORLD, myProcessRank % numberOfBlocks, myProcessRank, &myGroup);
 }
 
 void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseMatrix &result) {
+
+    steady_clock::time_point begin = steady_clock::now();
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
@@ -44,6 +48,8 @@ void BlockedColumnA::sparseTimesDense(const CSCMatrix &A, DenseMatrix &B, DenseM
             }
         }
     }
+    steady_clock::time_point end = steady_clock::now();
+    sparseTimeDenseTotalTime += timeDiffInMs(begin,end);
 }
 
 void BlockedColumnA::calcGroups() {
@@ -165,6 +171,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     MPI_Finalize();
     log("after finalize");
+    stream() << "sparseTimesDenseTotal: " << sparseTimeDenseTotalTime << endl;
     delete[] localAPencil->nonzeros;
     delete[] localAPencil->extents;
     delete[] localAPencil->indices;

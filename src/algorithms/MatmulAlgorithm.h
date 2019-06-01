@@ -15,6 +15,7 @@ public:
     int n, nBeforeExtending;
     int maxANonzeros;
     MPI_Comm myGroup;
+    double sparseTimeDenseTotalTime;
 
     void init(int argc, char **argv);
 

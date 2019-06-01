@@ -10,6 +10,7 @@
 #include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 template<class T>
 void printArray(T *array, int size, std::ostream &stream) {
@@ -54,6 +55,8 @@ void log(T &s) {
 }
 
 ofstream &stream();
+
+double timeDiffInMs(steady_clock::time_point a, steady_clock::time_point b);
 
 
 #endif //AC370756_UTILS_H
