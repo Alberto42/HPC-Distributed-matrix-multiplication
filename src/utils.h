@@ -21,6 +21,7 @@ void printArray(T *array, int size, std::ostream &stream) {
 class Logger {
 public:
     ofstream outfile;
+    clock_t startTime;
 
     Logger(int myProcessNo);
 
@@ -38,7 +39,7 @@ void initLogger(int myProcessNo);
 
 template<class T>
 void Logger::log(T &s) {
-    outfile << s << endl;
+    outfile << s << " (Time since start: " << 1000.0 * (clock() - startTime) / CLOCKS_PER_SEC << " ms)" << endl;
 }
 
 namespace utils {

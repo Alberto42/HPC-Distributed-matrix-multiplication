@@ -3,7 +3,8 @@ project(ac370756)
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_COMPILER CC)
 
-SET(CMAKE_CXX_FLAGS "-Wall -Wextra -g")
+#SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O3 -hfp3")
+SET(CMAKE_CXX_FLAGS "-Wall -Wextra -O3")
 
 include_directories(.)
 
@@ -19,7 +20,6 @@ endforeach()
 list(REMOVE_DUPLICATES Foo_INCLUDE_DIRS)
 
 add_executable (matrixmul ${Foo_SOURCES})
-add_executable (testTarget test.cpp)
 
 #target_link_libraries(matrixmul libboost_program_options.a libboost_log.a)
 target_link_libraries(matrixmul ${MPI_C_LIBRARIES})

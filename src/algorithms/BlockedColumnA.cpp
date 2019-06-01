@@ -118,13 +118,11 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     }
 
+    log("scatterAAmongGroups");
     scatterAAmongGroups(fullMatrixA, *localAPencil);
 
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (myProcessRank == 0) {
-        startTime = MPI_Wtime();
-    }
 
     log("replicateA");
     replicateA(*localAPencil);
@@ -142,12 +140,13 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
                 break;
             shift(localAPencil, localAPencilTmp, MPI_COMM_WORLD);
         }
-        if (j != spec.exponent - 1)
+        if (j != spec.exponent - 1) {
+            log("assignCMatrixToBMatrix");
             assignCMatrixToBMatrix(localBPencil, localCPencil);
+        }
     }
 
     log("gatherResult");
-
     if (spec.verbose) {
         receiverCMatrices = gatherResultVerbose(localCPencil);
     } else {
@@ -155,10 +154,6 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (myProcessRank == 0) {
-        endTime = MPI_Wtime();
-        stream() << "Total time: " << endTime - startTime << endl;
-    }
     log("printResult");
     if (spec.verbose) {
         printResult(receiverCMatrices);
@@ -169,4 +164,9 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
 
     MPI_Finalize();
     log("after finalize");
+    delete[] localAPencil->nonzeros;
+    delete[] localAPencil->extents;
+    delete[] localAPencil->indices;
+//    delete[] localAPencil;
+//    delete[] localAPencilTmp;
 }

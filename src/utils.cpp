@@ -39,6 +39,7 @@ namespace utils {
 
 void initLogger(int myProcessNo) {
     utils::logger = new Logger(myProcessNo);
+    utils::logger->startTime = clock();
 }
 
 ofstream &stream() {
