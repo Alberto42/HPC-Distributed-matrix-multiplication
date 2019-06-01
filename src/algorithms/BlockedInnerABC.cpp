@@ -11,11 +11,12 @@
 #include "MatmulAlgorithm.h"
 #include <cstring>
 
+using namespace std::chrono;
+
 void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     CSRMatrix fullMatrixA, *localA, *localATmp;
     DenseMatrix *localBPencil, *localCPencil, *fullMatrixC;
     long long greaterCount;
-    double startTime, endTime;
 
     localA = new CSRMatrix();
     localATmp = new CSRMatrix();
@@ -35,6 +36,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
         n = fullMatrixA.n;
     }
 
+    log("scatterAAmongGroups");
     scatterAAmongGroups(fullMatrixA, *localA);
 
     if (myProcessRank < numberOfBlocks) {
@@ -42,11 +44,10 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (myProcessRank == 0) {
-        startTime = MPI_Wtime();
-    }
+    startTime = steady_clock::now();
 
     log("replicateA");
+    replicateStartTime = steady_clock::now();
     replicateA(*localA);
 
     const int blockCWidth = n / numberOfBlocks;
@@ -57,6 +58,7 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
         localBPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
     }
     MPI_Bcast(localBPencil, localBPencil->size(), MPI_BYTE, 0, groupDenseReplicate);
+    replicateEndTime = steady_clock::now();
 
     localCPencil = makeDenseMatrix(n, blockCWidth, CShiftHorizontal, 0);
 
@@ -72,18 +74,17 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
             gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
     }
 
+    gatherStartTime = steady_clock::now();
     if (spec.verbose) {
         fullMatrixC = gatherResultVerbose(localCPencil);
     } else {
         gatherResultAfterMultiplicationAndAssign(localBPencil, localCPencil, groupDenseReplicate);
         greaterCount = gatherResultGreater(localBPencil) / spec.c;
     }
+    gatherEndTime = steady_clock::now();
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (myProcessRank == 0) {
-        endTime = MPI_Wtime();
-        stream() << "Total time: " << endTime - startTime << endl;
-    }
+    endTime = steady_clock::now();
 
     log("printResult");
     if (myProcessRank == 0) {
@@ -96,7 +97,13 @@ void BlockedInnerABC::innerABCAlgorithm(int argc, char **argv) {
 
     MPI_Finalize();
     log("after finalize");
-
+    log("");
+    stream() << "sparseTimesDenseTotal: " << sparseTimeDenseTotalTime << endl;
+    stream() << "shiftTotal: " << shiftTotalTime << endl;
+    stream() << "assignTotal: " << assignTotalTime<< endl << endl;
+    stream() << "replicateATotal: " << timeDiffInMs(replicateStartTime, replicateEndTime) << endl;
+    stream() << "gatherTotal: " << timeDiffInMs(gatherStartTime, gatherEndTime) << endl;
+    stream() << "totalAlgorithmTime: " << timeDiffInMs(startTime, endTime) << endl;
 
 }
 
@@ -117,6 +124,7 @@ void BlockedInnerABC::createMPICommunicators() {
 }
 
 void BlockedInnerABC::sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, DenseMatrix &result) {
+    steady_clock::time_point begin = steady_clock::now();
     for (int i = 1; i < A.m + 1; i++) {
         int extentBegin = A.extents[i - 1] - A.offset;
         int extentEnd = A.extents[i] - A.offset;
@@ -135,9 +143,13 @@ void BlockedInnerABC::sparseTimesDense(const CSRMatrix &A, DenseMatrix &B, Dense
             }
         }
     }
+    steady_clock::time_point end = steady_clock::now();
+    sparseTimeDenseTotalTime += timeDiffInMs(begin,end);
 }
 
 void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp, MPI_Comm comm) {
+    steady_clock::time_point begin = steady_clock::now();
+
     MPI_Request requests[8];
     MPI_Status statuses[8];
 
@@ -171,10 +183,15 @@ void BlockedInnerABC::shift(CSRMatrix *&localA, CSRMatrix *&localATmp, MPI_Comm 
     delete[] localATmp->nonzeros;
     delete[] localATmp->extents;
     delete[] localATmp->indices;
+
+    steady_clock::time_point end = steady_clock::now();
+    shiftTotalTime += timeDiffInMs(begin,end);
 }
 
 void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *localBPencil, DenseMatrix *localCPencil,
                                                                MPI_Comm comm) {
+    steady_clock::time_point assignStartTime = steady_clock::now();
+
     assert(localBPencil->n == localCPencil->n);
     assert(localBPencil->m == localCPencil->m);
     MPI_Datatype dtLocalCBlock;
@@ -190,7 +207,6 @@ void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *loca
 
     MPI_Allgather((void *) localCPencil, 1, dtLocalCBlock, receiverCMatrices, 1, dtLocalCBlock, comm);
 
-    for (int i = 0; i < localCPencil->n; i++) {}
     for (int i = 0; i < numProcessesInGroup; i++) {
         DenseMatrix *m = getIthMatrix(receiverCMatrices, i);
         for (int localRow = 0; localRow < m->n; localRow++) {
@@ -210,6 +226,8 @@ void BlockedInnerABC::gatherResultAfterMultiplicationAndAssign(DenseMatrix *loca
 
     delete[] receiverCMatrices;
 
+    steady_clock::time_point assignEndTime = steady_clock::now();
+    assignTotalTime += timeDiffInMs(assignStartTime, assignEndTime);
 }
 
 DenseMatrix *BlockedInnerABC::gatherResultVerbose(DenseMatrix *localCPencil) {
@@ -252,14 +270,6 @@ void BlockedInnerABC::printResult(DenseMatrix *fullC) {
             cout << endl;
         }
     }
-}
-
-void BlockedInnerABC::assignCMatrixToBMatrix(DenseMatrix *localBPencil, DenseMatrix *localCPencil) {
-    assert(localBPencil->size() == localCPencil->size());
-    memcpy(localBPencil, localCPencil, localBPencil->size());
-    for (int i = 0; i < localCPencil->n * localCPencil->m; i++)
-        localCPencil->matrix[i] = 0;
-
 }
 
 
