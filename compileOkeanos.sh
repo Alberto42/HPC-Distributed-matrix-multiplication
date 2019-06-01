@@ -10,3 +10,4 @@ cp -r ../tests .
 
 cp -f ../batch.batch .
 cp -f ../runOkeanos.sh .
+cp -f ../createBuildDirs.sh .

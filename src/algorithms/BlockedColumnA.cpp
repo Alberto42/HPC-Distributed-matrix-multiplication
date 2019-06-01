@@ -158,6 +158,7 @@ void BlockedColumnA::columnAAlgorithm(int argc, char **argv) {
     if (spec.verbose) {
         printResult(receiverCMatrices);
     } else {
+        stream() << "resultGather: " << greaterCount << endl;
         if (myProcessRank == 0)
             cout << greaterCount << endl;
     }
