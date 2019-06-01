@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 using namespace std;
 
@@ -21,7 +22,7 @@ void printArray(T *array, int size, std::ostream &stream) {
 class Logger {
 public:
     ofstream outfile;
-    clock_t startTime;
+    std::chrono::steady_clock::time_point startTime;
 
     Logger(int myProcessNo);
 
@@ -39,7 +40,8 @@ void initLogger(int myProcessNo);
 
 template<class T>
 void Logger::log(T &s) {
-    outfile << s << " (Time since start: " << 1000.0 * (clock() - startTime) / CLOCKS_PER_SEC << " ms)" << endl;
+    std::chrono::steady_clock::time_point current = std::chrono::steady_clock::now();
+    outfile << s << " (Time since start: " << std::chrono::duration_cast<std::chrono::microseconds>(current - startTime).count() / 1000.0 << " ms)" << endl;
 }
 
 namespace utils {

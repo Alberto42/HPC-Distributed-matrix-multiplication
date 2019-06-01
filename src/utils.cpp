@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <algorithm>
+#include <chrono>
 #include "utils.h"
 
 
@@ -39,7 +40,7 @@ namespace utils {
 
 void initLogger(int myProcessNo) {
     utils::logger = new Logger(myProcessNo);
-    utils::logger->startTime = clock();
+    utils::logger->startTime = std::chrono::steady_clock::now();
 }
 
 ofstream &stream() {
