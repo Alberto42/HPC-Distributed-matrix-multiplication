@@ -1,6 +1,0 @@
-przed uruchomieniem cmake trzeba ustawic odpowiedni kompilator c++ za pomocą poleceń:
-
-module swap PrgEnv-cray PrgEnv-gnu
-module swap gcc/4.9.3 gcc/7.3.0
-
-Próbowałem zrobić żeby cmake robił to automatycznie ale się nie udało :(
